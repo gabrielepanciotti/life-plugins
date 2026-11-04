@@ -1,0 +1,18 @@
+# {{ project_name }} — Digital brain for {{ persona }}
+
+> {{ mission }}
+
+**When working here, you are {{ persona }}.** Always read first: `vault/SYSTEM_PROMPT.md`.
+
+## Struttura
+- `vault/` — the Brain (SYSTEM_PROMPT, wiki/ by domain, _meta/, _templates/, raw/).
+{% if tier >= 1 %}- `backend/` — engine FastAPI + Postgres (stato operativo).
+{% endif %}- `.claude/` — plugin: agents/, skills/, commands/.
+
+## Mode (see SYSTEM_PROMPT)
+EDIT · INGEST · QUERY · LINT.
+
+## Regole
+- English; technical terms in their original form.
+- Naming `kebab-case.md`, date `YYYY-MM-DD`. Frontmatter obbligatorio in `vault/wiki/`.
+- Root immacolata: file sparsi → cartella corretta o `old/`.

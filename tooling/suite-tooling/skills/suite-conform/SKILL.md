@@ -1,0 +1,118 @@
+---
+name: suite-conform
+description: >
+  Use to propagate the Life blueprint into a node (or all nodes) — sync
+  canonical managed assets (ruff, .gitignore) and write the suite.lock.json
+  link manifest of shared packages the node consumes, then refresh
+  resolved.json + agents. Wraps `suite_core.nodes conform`. Run after editing
+  a blueprint asset or shared package in Life. Trigger: "conform the node",
+  "suite conform", "/suite-conform".
+argument-hint: "[node-dir | --all root-dir]"
+allowed-tools: Bash
+---
+
+# suite-conform
+
+Propagate the canonical blueprint into one node or the whole tree.
+
+1. From `Life/packages/shared`, run either:
+   ```bash
+   .venv/Scripts/python -m suite_core.nodes conform <node-dir>
+   # or, to conform every node under a root:
+   .venv/Scripts/python -m suite_core.nodes conform --all <root-dir>
+   ```
+2. This (a) writes the profile's managed assets (`ruff.toml`, `.gitignore`
+   managed block), (b) writes `suite.lock.json` recording which shared
+   packages the node consumes, (c) scaffolds the **`brain-wiki`** asset
+   (folder `brain/` with domain subfolders and `_README.md` for each
+   domain, `brain/private/`, `brain/index.md`, `brain/CHANGELOG.md`) —
+   **idempotent; never overwrites existing notes**, and (d) runs `apply`
+   to refresh `node.config.resolved.json` and `.claude/agents/*.md`.
+   **`AGENTS.md` is no longer generated (Life#126)**: the mirror of
+   `CLAUDE.md` fell behind (21 of 24 on 2026-10-15), and because `AGENTS.md`
+   takes precedence over `CLAUDE.md`, Codex read outdated rules. Codex reads
+   `CLAUDE.md` itself (`project_doc_fallback_filenames`): conform **deletes**
+   every `AGENTS.md` that begins with `<!-- suite-managed (agents-md)`, and
+   leaves manually written ones untouched.
+   **Whole files edited manually (Life#87)**: `suite.lock.json` records in
+   `files` the hash of every whole file written by conform (deploy/,
+   `ruff.toml`, favicon…). If the file on disk no longer matches,
+   someone changed it: conform **does not overwrite it**, lists it as
+   "manually modified" and exits with 1. In a lock predating #87 (without
+   `files`), an existing file that differs from the template still belongs
+   to conform if it matches an earlier version of its template (git history
+   of `blueprint/assets/`, rendered with the node's variables): it then follows
+   the template. Everything else is treated as manually modified; for
+   compose files generated from code, only the two outdated forms of
+   `env_file` are rewritten. A node without a lock (scaffold, adopt) is written
+   as before. There are two options: bring the change into the template (if
+   it is needed by everyone), or run `conform --force <dir>` after reviewing
+   the diff (the template wins and the change is lost). `conform --check`
+   distinguishes "out of date" from "manually modified".
+3. **`node.config.git`** determines what the node repo tracks. Since
+   #113, **`visibility` no longer determines this**: `visibility` is
+   publication (`publish/bundle.py` excludes everything that is not `public`),
+   and combining it with `.gitignore` meant saying "not published to the
+   network" and "not in the repo" were the same question. They are not: a
+   private node whose brain is the team's shared memory needs to be tracked in
+   a private repo and still stay out of every public bundle.
+   - **`git.brain: "ignored"`** → `brain/*` + `!brain/README.md` (plus the
+     `**/brain/*` variants): the **entire** brain is ignored by git except for
+     `brain/README.md`, the only brain file the DoD requires to be pushable.
+     Do **not** use bare `brain/`: a directory pattern prevents git from
+     evaluating any exclusions beneath it, so `!brain/README.md` would be
+     silently ignored.
+   - **`git.brain: "tracked"`** → `brain/private/` + `**/brain/private/`: the
+     domain wiki remains versioned; only personal data is excluded.
+   - **`git.brainExcluded`** creates further exclusions in a tracked brain (the
+     case of "team brain with confidential material"), each retaining its own
+     `_index.md`. Exclusions are emitted **inside** the managed block, after
+     the tracked lines, because git applies the last matching rule — exactly
+     why nodes used to write them manually *below* the block, hoping no
+     conform would reorder anything.
+   - **`git.agents`** does the same for agents **generated** in
+   `.claude/agents/` (`<slug>-<archetype>.md`; default `ignored`: they are
+     materialized artifacts; `tracked` for nodes where agents are the entry
+   point for non-developers — the user agent remains ignored; this is
+   per-device). The block ignores a `*-<archetype>.md` glob for each archetype,
+     **never the whole folder**: manually written **domain** agents
+     (`pantry-keeper.md`, `session-routing.md`) are source files; conform does
+     not regenerate them, and they must be committed (Life#94). An instruction
+     to "untrack `.claude/agents/` (regenerated by conform)" deletes them from
+     every fresh clone.
+   `git` is **node-local**: it is not composed along `inherits`, because each
+   node is its own repo, and composing it would let the root rewrite 32
+   independent `.gitignore` files. Inheritance still reaches it through the
+   **default**: each omitted field means `None` = "derive from `visibility`"
+   (`private` → `ignored`, `public` → `tracked`), and `visibility` is composed —
+   in turn derived from `kind` via `nodes/policies/visibility.policy.json`
+   (`competenza` → public, `istanza` → private) with **fallback `private`**
+   (SR-2). A node that says nothing produces output byte-identical to before
+   the spec.
+   If conform **changes** the profile on a node that was already formatted, it
+   says so explicitly in the output (`warning: brain privacy profile changed ...`)
+   instead of reporting only `written=N`.
+   **Output does not depend on the device**: nothing conform writes can depend
+   on gitignored files. `env_file: ../.env` is always emitted with
+   `required: false` (Compose >= 2.24), rather than only where `.env` existed.
+   **Missing ports → no `deploy/`**: if the registry lacks the ports used by
+   the node, conform stops with an error instead of writing `reverse_proxy
+   x-frontend:` or `ENV PORT=`. Ports come from the node's tree registry, which
+   conform finds from the node's location on disk: the nearby parent folder
+   (at any level above the node) with `instance.config.json`, for example
+   `work/<Project>` for `work/<Node>`. An explicit `LIFE_INSTANCE_DIR` that
+   contradicts that location is an error. `--all` continues with the other
+   nodes and exits with 1. From a **worktree checkout** (such as launcher worktrees
+   in `~/.launcher-worktrees/`), the location that determines this is the main
+   checkout location): the tree is searched there, as
+   is the framework checkout from `inherits` if it cannot be resolved from the worktree;
+   files are written to the worktree (#89). Ports where a service actually
+   runs are fixed with `ownPorts` in the graph (framework or tree) and
+   `portPolicy: "own"`, never by removing the tree.
+4. The lock manifest records intent only; it does not pip/npm install.
+   Conform is safe to run repeatedly: a second run reports `written=0`.
+   See [[suite-apply]], [[suite-resolve-node]], [[suite-materialize-agents]].
+
+## Instance specifics
+
+Run `python -m suite_core.nodes skill-overlay suite-conform` and apply what it prints (it may print nothing).

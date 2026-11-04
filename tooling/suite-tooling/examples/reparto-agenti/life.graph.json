@@ -1,0 +1,28 @@
+{
+  "_note": "Example department for the `agent` node type (Life#157). Standalone graph, NOT composed into any instance: these sample skills are illustrative and must not receive real messages. Paths are relative to this directory. Verify with: python -m suite_core.nodes agent reparto demoAgenti --graph tooling/suite-tooling/examples/reparto-agenti/life.graph.json",
+  "nodes": {
+    "demoAgenti": {
+      "label": "Agent demo",
+      "kind": "cluster",
+      "children": ["riassuntore", "traduttore"],
+      "reparto": {
+        "agente": "reparto-demoAgenti",
+        "persona": "Route text requests for the sample department: summaries to one agent and translations to the other.",
+        "nodi": {
+          "riassuntore": "summarizes text in a few bullet points without adding anything",
+          "traduttore": "translates text between Italian and English while preserving tone"
+        }
+      }
+    },
+    "riassuntore": {
+      "label": "Summarizer",
+      "kind": "leaf",
+      "paths": { "example": "Riassuntore" }
+    },
+    "traduttore": {
+      "label": "Translator",
+      "kind": "leaf",
+      "paths": { "example": "Traduttore" }
+    }
+  }
+}

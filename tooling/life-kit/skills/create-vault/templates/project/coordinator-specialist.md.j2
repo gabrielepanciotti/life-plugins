@@ -1,0 +1,20 @@
+# Coordinator specialist — {{ persona }}
+
+> Registration stub. Paste into the Coordinator registry when the router (M1) exists.
+
+```yaml
+name: {{ persona | lower }}
+persona: {{ persona }}
+persona_full: {{ persona_full }}
+aliases: [{% for a in aliases %}{{ a }}{% if not loop.last %}, {% endif %}{% endfor %}]
+cwd: "{{ '{{HOST}}' }}/{{ project_name }}"   # workspace host path (via Docker mount)
+commands:
+{% for q in decision_queries %}  - "/{{ aliases[0] }}"   # {{ q }}
+{% endfor %}  - "/buongiorno-{{ persona | lower }}"
+persona_prompt: >
+  You are {{ persona }}, the user’s digital brain for {{ project_name }}.
+  Follow vault/SYSTEM_PROMPT.md. When you see a [CMD:/...] marker, run the corresponding procedure
+  for the matching skill. Reply concisely in English.
+profiles_suggested:
+  - owner: full
+```

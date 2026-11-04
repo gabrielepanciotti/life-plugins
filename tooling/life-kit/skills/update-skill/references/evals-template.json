@@ -1,0 +1,49 @@
+{
+  "skill": "{{SKILL_NAME}}",
+  "model": "sonnet",
+  "max_budget_usd": 0.50,
+  "test_cases": [
+    {
+      "id": "tc01_{{positive_scenario}}",
+      "prompt": "{{test_prompt_where_skill_should_act}}",
+      "context": {
+        "cwd": null,
+        "setup_commands": []
+      },
+      "assertions": [
+        {"type": "file_exists", "value": "{{expected_file}}", "description": "Must create expected file"},
+        {"type": "file_contains", "path": "{{file}}", "value": "{{critical_content}}", "description": "File must contain key content"},
+        {"type": "file_not_contains", "path": "{{file}}", "value": "TODO", "description": "No TODOs left in output"},
+        {"type": "output_not_contains", "value": "{{forbidden_word}}", "description": "Must not contain forbidden content"},
+        {"type": "command_succeeds", "value": "{{validation_command}}", "description": "Output must be valid"}
+      ]
+    },
+    {
+      "id": "tc02_{{negative_scenario}}",
+      "prompt": "{{vague_or_invalid_prompt_where_skill_should_refuse}}",
+      "context": {
+        "cwd": null,
+        "setup_commands": []
+      },
+      "assertions": [
+        {"type": "output_not_contains", "value": "```python", "description": "Must NOT generate code on vague input"},
+        {"type": "output_not_contains", "value": "```javascript", "description": "Must NOT generate JS on vague input"},
+        {"type": "output_regex", "value": "\\?[\\s\\n].*\\?", "description": "Must ask at least 2 clarifying questions"},
+        {"type": "output_regex", "value": "(which|what|how|where|when)", "description": "Must use interrogative words"},
+        {"type": "output_max_lines", "value": "30", "description": "Response should be concise questions, not lengthy"}
+      ]
+    },
+    {
+      "id": "tc03_{{routing_path_A}}",
+      "prompt": "{{prompt_that_triggers_routing_path_A}}",
+      "context": {
+        "cwd": null,
+        "setup_commands": []
+      },
+      "assertions": [
+        {"type": "output_contains", "value": "{{keyword_from_path_A}}", "description": "Must follow routing path A"},
+        {"type": "output_not_contains", "value": "{{keyword_from_path_B}}", "description": "Must NOT follow wrong path"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+# Conventions — {{ project_name }}
+
+> Domain SCHEMA. Co-evolve it with the vault: refine it as the domain grows.
+
+## Domini wiki
+
+{% for d in wiki_domains %}- `{{ d }}/`
+{% endfor %}
+
+## Standard frontmatter (required in every `.md` file under `wiki/`)
+
+```yaml
+---
+type: <entity-type>
+title: ""
+tags: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+sources: ""          # "" for first-party writing; "[[../raw/file]]" when sourced from raw
+coverage: high|med|low   # how complete/reliable this page is
+---
+```
+
+## Entity-types canonici
+
+{% for e in entity_types %}### `{{ e.name }}`
+Campi specifici: {% if e.fields %}{% for f in e.fields %}`{{ f }}`{% if not loop.last %}, {% endif %}{% endfor %}{% else %}(nessuno){% endif %} · Template: `_templates/{{ e.name }}.md`
+
+{% endfor %}
+## Naming & stile
+- `kebab-case.md`, date ISO `YYYY-MM-DD`, no numeri-prefisso.
+- Use `[[wikilink]]` for every internal reference.
+- One canonical page per fact; link to it from all others.

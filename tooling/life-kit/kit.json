@@ -1,0 +1,76 @@
+{
+  "$doc": "Which parts of the owner’s ~/.claude go into the life-kit plugin. Generated with `python scripts/kit/esporta-kit.py`; `overrides/` contains hand-written generic versions; `rewrite` contains literal substitutions applied everywhere; substitutions naming private data (the owner’s name) belong in unversioned `private/kit-rewrite.json`, in the same format. No company entries or owner-specific infrastructure references.",
+  "skills": [
+    "dev-workflow",
+    "rpit-loop",
+    "git-workflow",
+    "github-issues",
+    "next",
+    "chiudi-task",
+    "idea",
+    "idee-revisione",
+    "consiglio",
+    "lavoro-notturno",
+    "retro",
+    "handoff",
+    "prior-art-redteam",
+    "alleggerisci-contesto",
+    "testing",
+    "indice-frontend",
+    "indice-gsd",
+    "indice-printing-press",
+    "indice-strumenti",
+    "evals-from-spec",
+    "design-md",
+    "graphify",
+    "book-to-skill",
+    "apprendimento-socratico",
+    "autoloop",
+    "allinea-opencode",
+    "gcloud-console-automation",
+    "delega-llm",
+    "orchestra-issue",
+    "do-everything",
+    "usabilita",
+    "update-skill",
+    "create-vault"
+  ],
+  "agents": [
+    "esplora",
+    "pianifica",
+    "revisione-codice",
+    "sicurezza",
+    "test",
+    "docs"
+  ],
+  "exclude": {
+    "skills/idee-revisione": [
+      "tests/*"
+    ],
+    "skills/create-vault": [
+      "tests/*"
+    ]
+  },
+  "rewrite": [
+    [
+      "account@gmail.com",
+      "<account>@gmail.com"
+    ],
+    [
+      "\"C:/Program Files/Google/Chrome/Application/chrome.exe\"",
+      "\"%ProgramFiles%/Google/Chrome/Application/chrome.exe\""
+    ],
+    [
+      "on server-1",
+      "on another server"
+    ],
+    [
+      "on server-1",
+      "on another server"
+    ],
+    [
+      "(server-1)",
+      "(another server)"
+    ]
+  ]
+}

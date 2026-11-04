@@ -1,0 +1,19 @@
+{
+  "name": "life",
+  "owner": { "name": "owner" },
+  "description": "Life fractal suite — self-contained marketplace shipping suite-tooling.",
+  "plugins": [
+    {
+      "name": "suite-tooling",
+      "source": "./tooling/suite-tooling",
+      "description": "Hierarchical node tooling for the Life monorepo: scaffold, resolve, and list fractal nodes.",
+      "version": "0.1.0"
+    },
+    {
+      "name": "life-kit",
+      "source": "./tooling/life-kit",
+      "description": "Suite skills and agents for development, version control, issues, knowledge, decisions, and autonomous work.",
+      "version": "0.1.0"
+    }
+  ]
+}

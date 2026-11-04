@@ -1,0 +1,13 @@
+# {{ project_name }}
+
+Digital brain **{{ persona_full }}**. Generated with the `create-vault` skill.
+
+## Prossimi passi
+1. Populate the wiki in EDIT mode (the domains have already been created and are empty).
+2. Refine `vault/_meta/convenzioni.md` (entity types, frontmatter).
+{% if tier >= 1 %}3. Start the engine (see `docker-compose.yml`) — Tier 1.
+{% endif %}4. (Futuro) Agganciare al Coordinator: vedi `coordinator-specialist.md`.
+
+## Identity
+- Persona: **{{ persona }}** ({{ persona_full }})
+- Callable as: {% for a in aliases %}`{{ a }}`{% if not loop.last %}, {% endif %}{% endfor %}

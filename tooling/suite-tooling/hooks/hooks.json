@@ -1,0 +1,65 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/suite-apply.sh\"",
+            "timeout": 30,
+            "async": true,
+            "statusMessage": "Applying Life node tooling..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/suite-brain-staleness-hint.sh\"",
+            "timeout": 15,
+            "async": true,
+            "statusMessage": "Checking brain freshness..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/life-checkouts-drift-hint.sh\"",
+            "timeout": 10,
+            "async": true,
+            "statusMessage": "Checking Life checkout drift..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/layout-doctor-hint.sh\"",
+            "timeout": 30,
+            "async": true,
+            "statusMessage": "Checking Life tree layout..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gh-identity-check.sh\"",
+            "timeout": 10,
+            "async": true,
+            "statusMessage": "Verifying GitHub identity..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/suite-wiki-sync.sh\"",
+            "timeout": 120,
+            "async": true,
+            "statusMessage": "Syncing brain wiki..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/brain-gate.sh\"",
+            "timeout": 60,
+            "async": true,
+            "statusMessage": "Checking brain quality gate..."
+          }
+        ]
+      }
+    ]
+  }
+}

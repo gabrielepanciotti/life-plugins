@@ -1,0 +1,27 @@
+# Shared personal infra (one-time). Defines the shared Postgres 'personal-db'
+# and the network personal-net used by ALL personal Tier-1 projects.
+# Defined once; each project then creates its own database with `--ensure-db`.
+# Portable: copy this folder to another server and run `docker compose up -d`.
+name: personal-infra
+
+services:
+  personal-db:
+    image: postgres:16
+    container_name: personal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - personal-db-data:/var/lib/postgresql/data
+    ports:
+      - "${PERSONAL_DB_PORT:-5432}:5432"
+    networks:
+      - personal-net
+
+volumes:
+  personal-db-data:
+
+networks:
+  personal-net:
+    name: personal-net

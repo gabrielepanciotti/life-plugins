@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..db import get_session
+
+router = APIRouter(tags=["health"])
+
+
+@router.get("/health")
+async def health(session: AsyncSession = Depends(get_session)) -> dict:
+    """Liveness + DB connectivity for the {{ project_name }} engine."""
+    try:
+        await session.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:  # noqa: BLE001 — health check must never raise
+        db_ok = False
+    return {"status": "ok", "project": "{{ project_name }}", "db": db_ok}

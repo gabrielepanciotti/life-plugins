@@ -1,0 +1,7 @@
+{
+  "name": "suite-tooling",
+  "version": "0.1.0",
+  "description": "Hierarchical node tooling for the Life monorepo. Skills wrap the suite_core.nodes resolver.",
+  "author": { "name": "owner" },
+  "keywords": ["life", "fractal", "monorepo", "tooling"]
+}

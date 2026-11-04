@@ -1,0 +1,22 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from ..db import Base
+
+
+class Item(Base):
+    """Example operational status row for {{ project_name }}.
+
+    Replace it with the real domain entities (see vault/_meta/convenzioni.md):
+    the pattern's golden rule — the DB indexes and calculates; the vault explains.
+    """
+
+    __tablename__ = "item"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(index=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
