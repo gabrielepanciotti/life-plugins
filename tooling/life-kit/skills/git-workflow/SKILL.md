@@ -1,40 +1,40 @@
 ---
 name: git-workflow
-description: "Writes long-form commit messages, closes an issue with a commit (Closes #N), manages feature branches, and resolves merge conflicts. Use it when you need an explicit commit message, a `Closes #N`, a feature branch, or when git output shows CONFLICT."
+description: "Writes long-form commit messages, closes an issue with a commit (Closes #N), manages feature branches, and resolves merge conflicts. Use it when you need an explicit commit message, a `Closes #N`, a feature branch, or when the git output shows CONFLICT."
 allowed-tools: Bash
 ---
 
-# Git Workflow — Commits, Branches, Conflicts
+# Git Workflow — commits, branches, conflicts
 
-Contents: Basic rule · Explicit commit · Close an issue · Feature branch · Branch that will not merge · Conflicts · Saving tokens
+Index: Basic rule Explicit commit Closing an issue Feature branch Non-merging branch Conflicts Token saving
 
-Multiple agent sessions can work in the same repo: they share one working tree and one index. Therefore, always commit named files and merge from a worktree that already has the correct branch checked out.
+Multiple Claude sessions can work on the same repo: they share a single working tree and a single index. This is why we always commit with the named files and always merge from a worktree that already has the right branch.
 
-Decision: need only a message or `Closes #N` → “Explicit commit.” Need to isolate a large task → “Feature branch.” Git shows `CONFLICT` → “Conflicts.”
+Quick guide: if you only need a message or a `Closes #N`, use “Explicit commit.” If you need to isolate a large task, use “Feature branch.” If Git shows `CONFLICT`, use “Conflicts.”
 
 ## Basic rule
 
-One commit per completed task, followed immediately by a push. Work on the main branch; use a feature branch only for tasks involving more than 10 files. Files created, deleted, or moved via Bash (`mv`, `cp`, script) must be named explicitly in the commit.
+One commit per completed task, followed immediately by a push. Work on the main branch; use a feature branch only for tasks involving more than 10 files. Files created, deleted, or moved via Bash (`mv`, `cp`, script) must be explicitly named in the commit.
 
 ## Explicit commit
 
 ```bash
-git commit -m "feat: short description" -- <files from this session>
+git commit -m "feat: short description" -- <files for this session>
 git push origin HEAD
 ```
 
-The pathspec after `--` is required: otherwise, the commit includes everything in the index, including work from other sessions. Never run `git add -A && git commit` while another session is active in the same repo.
+The pathspec after `--` is mandatory: without it, the commit takes everything in index, even the work of other sessions. Never `git add -A && git commit` when another session is alive on the same repo.
 
 Types: `feat:` `fix:` `refactor:` `docs:` `test:` `chore:`
-- 50 characters maximum, in English.
-- No body except `Closes #N`.
+- Maximum 50 characters, in English.
+- No commit body, except for `Closes #N`.
 
-## Close an issue with the commit
+## Close an issue with commit
 
-The message must use actual newlines (`\n` inside quotes does not create a newline, so `Closes #N` would not be recognized):
+The message goes on multiple true lines (`\n` inside the quotes does not wrap, so `Closes #N` would not be read):
 
 ```bash
-git commit -F - -- <files from this session> <<'MSG'
+git commit -F - -- <files for this session> <<'MSG'
 feat: short description
 
 Closes #N
@@ -42,66 +42,65 @@ MSG
 git push origin HEAD
 ```
 
-After pushing, verify that the issue closed: `gh issue view N --json state`.
+After the push, check that the issue has closed: `gh issue view N --json state`.
 
-## Feature branch (tasks with more than 10 files)
+## Feature branch (task of more than 10 files)
 
-The branch ends with the task: close the issue, merge the work, and delete the branch as one operation. If these are separate, in a month no one will know whether the branch contains anything.
+The branch is removed when the task is complete: closing the issue, merging the work, and deleting the branch happen together. If these steps are separated, in a month no one will know whether the branch contains anything.
 
 1. Create the branch in your own worktree, without touching the shared tree (`EnterWorktree`, or manually):
    ```bash
-   git -C <repo> worktree add ../<repo>-feature-nome-breve -b feature/nome-breve
+   git -C <repo> worktree add ../<repo>-feature-short-name -b feature/short-name
    ```
-   Work and commit there. Then `git push -u origin feature/nome-breve`.
-2. When the work is done, merge **from the worktree that already has the main branch** in checkout (here `main`; use `master` if that is the repo’s branch), as a chain: if the merge fails or conflicts, neither the push nor deletion runs.
+Work and commit there. Then run `git push -u origin feature/short-name`.
+2. When the work is complete, merge **from the worktree that already has the main branch** checked out (here `main`; use `master` if that is the repository's branch), as a chain: if the merge fails or conflicts, neither the push nor deletion will happen.
    ```bash
-   git -C <worktree-con-main> merge --no-ff feature/nome-breve -m "merge: <cosa>" \
-     && git -C <worktree-con-main> push origin main \
-     && git push origin --delete feature/nome-breve \
-     && git worktree remove <worktree-del-branch> \
-     && git branch -d feature/nome-breve
+   git -C <main-worktree> merge --no-ff feature/short-name -m "merge: <description>" \
+     && git -C <main-worktree> push origin main \
+     && git push origin --delete feature/short-name \
+     && git worktree remove <feature-worktree> \
+     && git branch -d feature/short-name
    ```
-   Never run `git checkout main` in the shared tree: that would move HEAD for the other sessions too.
-3. Close the issue (`gh issue close N`) in the same step.
+Never run `git checkout main` in the shared tree: it would also move HEAD for the other sessions.
+3. Close the issue (`gh issue close N`) as part of the same step.
 
-Check: `git branch -a | grep feature/nome-breve` should return nothing.
+Check: `git branch -a | grep feature/short-name` should not return anything.
 
-## Branch that will not merge (superseded, abandoned)
+## Branch not merging (superseded, abandoned)
 
-Do not merge blindly or simply delete it: first measure the difference, then archive it with a tag.
+Do not merge blindly or simply delete the branch: first assess it, then preserve it in a tag.
 
 ```bash
 git rev-list --left-right --count origin/main...origin/feature/X   # ahead / behind
 comm -23 <(git ls-tree -r --name-only origin/feature/X | sort) \
          <(git ls-tree -r --name-only origin/main | sort)          # files only on that branch
 
-git tag -a archivio/X origin/feature/X -m "<perché è superato>"
+git tag -a archive/X origin/feature/X -m "<why it is obsolete>"
 git push origin archivio/X && git push origin --delete feature/X
 ```
 
-The tag costs nothing and remains recoverable (`git checkout archivio/X`). If the branch is far behind, the right question is “what does it contain that main does not already have?” In two cases out of three, the feature has been rewritten better, and merging it would regress the code. Prune already merged branches with `git branch --merged`.
+The tag costs nothing and remains recoverable (`git checkout archive/X`). If the branch is far behind, ask: “What does it contain that main does not already have?” In two cases out of three, the feature has since been rewritten better, and merging the old branch would regress the code. Already merged branches can be pruned with `git branch --merged`.
 
 ## Conflicts
 
-A `git pull --rebase` at the start of a session reduces conflicts. If a rebase or merge stops with `CONFLICT`:
+A `git pull --rebase` at session start reduces conflicts. If a rebase or merge stops with `CONFLICT`:
 
 Copy and check off:
-- [ ] 1. `git status --short`: lists the `UU` (conflicted) files. Leave any files that are not yours alone.
-- [ ] 2. For each conflicted file, open it and look for `<<<<<<<`, `=======`, `>>>>>>>`. Above `=======` is your section; below is the other branch’s. If you cannot tell what the other side intended: `git log -p -1 <ramo-altro> -- <file>`. If that does not help, return to step 1.
-- [ ] 3. Write the final version to preserve both sides’ intent, without the markers. If the two sides are incompatible, keep the other branch’s version and tell the user; do not silently discard someone else’s work.
-- [ ] 4. `grep -n '^<<<<<<<\|^>>>>>>>' <file>` should return nothing. If it returns lines, go back to step 3.
-- [ ] 5. Run the project tests. If they fail, return to step 3: the merge may have kept two halves that do not work together.
-- [ ] 6. `git add <file risolti>` then `git rebase --continue` (or `git commit --no-edit` if it was a merge). If it stops again, repeat from step 1 for the new files.
-- [ ] 7. If the situation is unmanageable: `git rebase --abort` (or `git merge --abort`) restores the previous state. This is a way to restart, not a failure.
+- [ ] 1. `git status --short`: List the `UU` (conflicting) files. If there are also files that are not yours, leave them alone.
+- [ ] 2. For each conflicting file, open it and search for `<<<<<<<`, `=======`, and `>>>>>>>`. Above `=======` is your part; below it is the other branch's part. If you do not understand what the other branch intended, run `git log -p -1 <other-branch> -- <file>`. If it returns nothing, go back to step 1.
+- [ ] 3. Write a final version that preserves both sides' intent, without the markers. If the two parts are incompatible, keep the other branch's version and tell the user; do not silently delete someone else's work.
+- [ ] 4. `grep -n '^<<<<<<<\|^>>>>>>>' <file>` should return nothing. If it returns any lines, go back to step 3.
+- [ ] 5. Run the project tests. If they fail, go back to step 3: the merge may have combined two parts that do not fit together.
+- [ ] 6. Run `git add <resolved-files>` and then `git rebase --continue` (or `git commit --no-edit` if it was a merge). If it stops again, repeat from step 1 for the new files.
+- [ ] 7. If the situation is unmanageable, `git rebase --abort` (or `git merge --abort`) restores everything to its previous state. This is a way to start over, not a failure.
 
-Finish only when `git status` no longer shows `rebase in progress` or `UU` and the tests pass. Then `git push origin HEAD` (after a previously pushed rebase, use `--force-with-lease`, never `--force`, and only on your branch).
+Finish only when `git status` no longer shows `rebase in progress` or any `UU` files, and the tests pass. Then run `git push origin HEAD` (after a rebase that was already published, use `--force-with-lease`, never `--force`, and only on your branch).
 
-## Saving tokens
+## Token saving
 
-- `git diff` before committing only if you do not know what changed; named files in the pathspec usually make that clear.
-- `git log` after committing is unnecessary: the commit printed its hash.
-- `git status --short` only when you need to check the state.
-
+- Run `git diff` before committing only if you are unsure what you changed: when the files are named in the pathspec, you usually already know.
+- `git log` after the commit is useless: the commit has printed its hash.
+- `git status --short` only when necessary to check the status.
 ## Instance specifics
 
-Run `python <this skill's base directory>/../../scripts/skill-overlay.py git-workflow` and apply what it prints (it may print nothing).
+Run `python <this skill's base directory>/../../scripts/skill-overlay.py git-workflow` and apply what it prints. It may print nothing.

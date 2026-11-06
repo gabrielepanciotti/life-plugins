@@ -1,6 +1,6 @@
 ---
 name: book-to-skill
-description: "Turn a book or collection of documents (PDF, EPUB, DOCX, HTML, Markdown, RTF, MOBI) into a chapter-based skill that the agent loads only when needed, instead of keeping hundreds of pages in context. Triggers: “turn this book into a skill,” “make a skill from this handout,” /book-to-skill."
+description: "Turn a book or collection of documents (PDF, EPUB, DOCX, HTML, Markdown, RTF, MOBI) into a chapter-based skill that the agent loads only when needed, instead of keeping hundreds of pages in context. Triggers: “turn this book into a skill,” “make a skill from these notes,” /book-to-skill."
 ---
 
 > **Local notes (Life kit)** — vendored from `virgiliojr94/book-to-skill` @ a24e62f (MIT; the

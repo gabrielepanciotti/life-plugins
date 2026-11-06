@@ -51,18 +51,18 @@ Feature F2 of the SPEC of an order management system (invented example): validat
 [
   {
     "type": "output_not_contains",
-    "value": "valido",
-    "description": "Order code with ORX prefix must be rejected, not accepted"
+    "value": "valid",
+    "description": "An order code with the ORX prefix must be rejected"
   },
   {
     "type": "output_contains",
-    "value": "prefisso ORD",
+    "value": "ORD prefix",
     "description": "The error message must mention the expected prefix"
   },
   {
     "type": "output_not_contains",
-    "value": "postcode accepted",
-    "description": "A 4-digit postcode must not pass validation"
+    "value": "accepted postcode",
+    "description": "A four-digit postcode must fail validation"
   }
 ]
 ```
@@ -72,23 +72,23 @@ Feature F2 of the SPEC of an order management system (invented example): validat
 ```json
 {
   "id": "f2-cap-too-short",
-  "prompt": "I am entering an order. The customer’s postcode is '3310'. Is it valid?",
-  "context": "Order management system: the postcode must have exactly 5 digits.",
+  "prompt": "I am entering an order. The customer postcode is '3310'. Is it valid?",
+  "context": "Order management system: the postcode must contain exactly 5 digits.",
   "assertions": [
     {
       "type": "output_not_contains",
       "value": "valid postcode",
-      "description": "A 4-digit postcode must not be declared valid"
+      "description": "A four-digit postcode must not be declared valid"
     },
     {
       "type": "output_not_contains",
       "value": "procedi",
-      "description": "Must not invite the user to proceed with an incorrect postcode"
+      "description": "Must not invite the user to proceed with an invalid postcode"
     },
     {
       "type": "output_contains",
       "value": "5",
-      "description": "Must indicate that the postcode requires 5 digits"
+      "description": "Must state that the postcode requires 5 digits"
     }
   ]
 }
@@ -99,18 +99,18 @@ Feature F2 of the SPEC of an order management system (invented example): validat
 ```json
 {
   "id": "f2-cf-pf-short",
-  "prompt": "The customer’s tax code is 'RSSMRA80A01'. Can I proceed?",
-  "context": "Order management system: natural-person tax code = 16 alphanumeric characters.",
+  "prompt": "The customer tax code is 'RSSMRA80A01'. Can I proceed?",
+  "context": "Order management system: an individual tax code consists of 16 alphanumeric characters.",
   "assertions": [
     {
       "type": "output_not_contains",
       "value": "valid tax code",
-      "description": "An 11-character tax code is not valid for a natural person"
+      "description": "An 11-character tax code is invalid for an individual"
     },
     {
       "type": "output_not_contains",
       "value": "procedi",
-      "description": "Must not unblock the flow with an incorrect tax code"
+      "description": "Must not continue with an invalid tax code"
     },
     {
       "type": "output_contains",
@@ -128,12 +128,12 @@ Always include ≥ 2 test_cases for behaviors that should NOT happen:
 ```json
 {
   "id": "neg-wrong-tool",
-  "prompt": "Write pytest tests for the calcola_totale function",
+  "prompt": "Write pytest tests for the calculate_total function",
   "assertions": [
     {
       "type": "output_not_contains",
       "value": "evals.json",
-      "description": "Must refer to the testing skill, not generate evals"
+      "description": "Must refer the user to the testing skill instead of generating evals"
     },
     {
       "type": "output_contains",

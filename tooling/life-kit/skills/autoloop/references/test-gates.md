@@ -1,66 +1,66 @@
-# Test gates — “real tests, not just green” (anti reward hacking)
+# Test-gates — "test genuini, non solo green" (anti reward-hacking)
 
-Operational details for the gates cited in `SKILL.md`. Goal: the agent must not be able to close the loop
-by cheating on the tests. Ordered by importance.
+Dettaglio operativo dei gate citati in `SKILL.md`. Obiettivo: l'agente non deve poter chiudere il loop
+imbrogliando sui test. Ordinati per importanza.
 
-## 1. Fail-to-pass + Pass-to-pass (gold standard, from SWE-bench)
+## 1. Fail-to-pass + Pass-to-pass (gold standard, da SWE-bench)
 
-The fix must:
-- make tests that **previously failed** (fail-to-pass) pass → proves the problem is fixed;
-- not break tests that **already passed** (pass-to-pass) → no regressions.
+Il fix deve:
+- far passare i test che **prima fallivano** (fail-to-pass) → dimostra che il problema è risolto;
+- non rompere i test che **già passavano** (pass-to-pass) → nessuna regressione.
 
-Implementation in the loop:
-1. Before starting, run the suite and record the set `PASS_BEFORE`.
-2. Define the `NEW_TESTS` (derived from the spec) that must pass.
-3. STOP only if: `NEW_TESTS` all pass **AND** `PASS_BEFORE` all still pass.
-4. **Freeze** the test/regression files: the loop agent may NOT modify them. If they need to change, that requires an
-   explicit human decision outside the loop.
+Implementazione nel loop:
+1. Prima di iniziare, esegui la suite e registra l'insieme `PASS_BEFORE`.
+2. Definisci i `NEW_TESTS` (derivati dalla spec) che devono diventare verdi.
+3. STOP solo se: `NEW_TESTS` tutti verdi **AND** `PASS_BEFORE` ancora tutti verdi.
+4. **Congela** i file di test/regression: l'agente del loop NON può modificarli. Se serve cambiarli, è una
+   decisione umana esplicita, fuori dal loop.
 
-## 2. Test writer separate from the implementer
+## 2. Test-writer separato dall'implementer
 
-If the same agent writes tests and code in the same step, it tailors them to each other (it writes tests that its
-code already passes).
+Se lo stesso agente scrive test e codice nello stesso passo, li addomestica a vicenda (scrive il test che il
+suo codice già passa).
 
-- Subagent A (**test-writer**): reads ONLY `SPEC.md`/UAT, NOT the implementation code. Produces the tests.
-- Subagent B (**implementer**): receives the tests as an immutable contract and writes code to satisfy them.
-- In Claude Code: `gsd-add-tests` (tests from UAT criteria) for A; `subagent-driven-development` for B.
+- Subagent A (**test-writer**): legge SOLO `SPEC.md`/UAT, NON il codice di implementazione. Produce i test.
+- Subagent B (**implementer**): riceve i test come contratto immutabile, scrive il codice per soddisfarli.
+- In Claude Code: `gsd-add-tests` (test dai criteri UAT) per A; `subagent-driven-development` per B.
 
 ## 3. verification-before-completion (superpowers)
 
-Do not claim "done / fixed / passing" without:
-- running the actual command;
-- pasting the actual output (exit code, test count).
+Vietato dichiarare "fatto / fixed / passing" senza:
+- aver eseguito il comando reale;
+- aver incollato l'output reale (exit code, conteggio test).
 
-"Evidence before assertions." Eliminates "it should work." This is the most important cultural gate.
+"Evidence before assertions." Elimina il "dovrebbe funzionare". È il gate culturale più importante.
 
-## 4. Independent adversarial reviewer
+## 4. Reviewer avversariale indipendente
 
-A **fresh** subagent (without the implementer’s context) whose job is to **break** the work:
-- `gsd-code-review` — bugs, security, quality;
+Un subagent **fresco** (senza il contesto di chi ha implementato) il cui compito è **rompere** il lavoro:
+- `gsd-code-review` — bug, sicurezza, qualità;
 - `code-reviewer` / `security-auditor`;
-- `silent-failure-hunter` — try/catch blocks that swallow errors, fallbacks that mask problems;
-- `pr-test-analyzer` — do the tests really cover edge cases?
+- `silent-failure-hunter` — try/catch che ingoiano errori, fallback che mascherano problemi;
+- `pr-test-analyzer` — i test coprono davvero i casi limite?
 
-The loop does NOT close if the reviewer finds real problems. (This is the same principle as the workflows’
-three-vote adversarial review.)
+Il loop NON chiude se il reviewer trova problemi reali. (È lo stesso principio della verifica avversariale
+3-voti dei workflow.)
 
-## 5. Make tests resistant to gaming
+## 5. Forza i test contro il gaming
 
-- **Mutation testing**: mutate the code; if the tests do not fail, they are weak → strengthen them.
-- **Property-based** (Hypothesis): generates random inputs against invariants, not just cherry-picked examples.
-- **Golden / snapshot** for observed real behavior.
-- **E2E** (Playwright) in addition to unit tests: `gsd-integration-checker` for complete user flows.
-- Forbid empty/tautological assertions (`assert True`, mocks that verify themselves).
+- **Mutation testing**: muta il codice; se i test non falliscono, sono deboli → rafforzali.
+- **Property-based** (Hypothesis): genera input casuali contro invarianti, non solo esempi cherry-picked.
+- **Golden / snapshot** su comportamento reale osservato.
+- **E2E** (Playwright) oltre agli unit: `gsd-integration-checker` per i flussi utente completi.
+- Vieta asserzioni vuote/tautologiche (`assert True`, mock che verificano sé stessi).
 
-## 6. Eval grounded in intent, not green tests (GSD)
+## 6. Eval ancorata all'intento, non al verde (GSD)
 
-- `gsd-verify-work` — conversational UAT: does the feature do what the spec promised?
-- `gsd-validate-phase` (Nyquist auditor) — fills the phase’s coverage gaps.
-- `gsd-audit-uat` / `gsd-audit-milestone` — the delivered work matches the original intent before archiving.
+- `gsd-verify-work` — UAT conversazionale: la feature fa ciò che la spec prometteva?
+- `gsd-validate-phase` (Nyquist auditor) — colma i gap di copertura della fase.
+- `gsd-audit-uat` / `gsd-audit-milestone` — il consegnato coincide con l'intento originale prima di archiviare.
 
-## 7. Measurable stop criteria (no subjective judgments)
+## 7. Criteri di stop misurabili (no giudizi soggettivi)
 
-STOP_CMD must be a conjunction of commands with exit codes, plus the two human-simulated gates (reviewer, UAT):
+STOP_CMD deve essere una congiunzione di comandi con exit code, più i due gate umani-simulati (reviewer, UAT):
 
 ```
 STOP =  pytest(new+regression)==0
@@ -70,13 +70,13 @@ STOP =  pytest(new+regression)==0
     AND gsd-verify-work == UAT_PASS
 ```
 
-No "looks good", "it should work", or "clean tone." Only verifiable conditions.
+Niente "sembra a posto", "dovrebbe funzionare", "tono pulito". Solo condizioni verificabili.
 
-## Anti-patterns to explicitly block
+## Anti-pattern da bloccare esplicitamente
 
-- Delete/comment out a failing test to “make it pass”.
-- Weaken an assertion (`assertEqual` → `assertIsNotNone`).
-- `try/except: pass` to hide an error and make the test pass.
-- Write the test after seeing the code, modeling it on the implementation.
-- Hardcode the expected output to match the current output (snapshot of the bug).
-- Skip/xfail a test without a written reason and a removal date.
+- Cancellare/commentare un test che fallisce per "farlo passare".
+- Indebolire un'asserzione (`assertEqual` → `assertIsNotNone`).
+- `try/except: pass` per nascondere un errore e rendere il test verde.
+- Scrivere il test dopo aver visto il codice, modellandolo sull'implementazione.
+- Hardcodare l'output atteso uguale all'output corrente (snapshot del bug).
+- Skippare/xfail un test senza una motivazione scritta e una data di rimozione.

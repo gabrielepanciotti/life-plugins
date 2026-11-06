@@ -30,5 +30,5 @@ assert s["issues"]["1"]["status"] == "failed" and s["issues"]["1"]["error"] == "
 assert s["issues"]["2"]["status"] == "running", s
 assert s["stats"]["failed"] == 1
 EOF
-cd "$tmp" && python3 "$here/../scripts/stato.py" "$tmp" | grep -q "no session" || { echo "FAIL without state"; exit 1; }
+cd "$tmp" && python3 "$here/../scripts/stato.py" "$tmp" | grep -q "nessuna sessione" || { echo "FAIL senza stato"; exit 1; }
 echo "test-stato: ok"

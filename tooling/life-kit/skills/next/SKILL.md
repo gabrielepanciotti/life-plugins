@@ -23,7 +23,8 @@ closed, return to step 1.
 gh issue list --state open --json number,title,labels --limit 100
 ```
 
-Build the table ordered by priority (P1, then P2, then P3; if the number is equal, the highest number). Priority and domain are obtained from the repo labels (for example `priority:P1`,
+Build the table ordered by priority (P1, then P2, then P3; if the number is equal, the plus number
+Bass). Priority and domain are obtained from the repo labels (for example `priority:P1`,
 `backend`); without priority label, sort by number. The table is the basic form:
 adapt it to the labels that the repo actually has.
 
@@ -36,8 +37,7 @@ adapt it to the labels that the repo actually has.
 Recommended next: #14 (P1). Confirm or choose another?
 ```
 
-Do not read code files before confirming. If there are no open issues, say so and
-propose `gh issue create` only if the user has a job to note.
+Do not read code files before confirming. If there are no open issues, say so and suggest `gh issue create` only if the owner has a task to record.
 
 ## 2. After confirmation — briefing
 
@@ -56,7 +56,7 @@ Only the user can do the `/clear`. After the briefing tell him:
 Briefing ready. Type /clear, then write: "proceed with #NUMBER"
 ```
 
-When he writes «proceed with #N»: reread the issue (`gh issue view N --json title,body`),
+When the owner writes «proceed with #N»: reread the issue (`gh issue view N --json title,body`),
 read the files indicated in the briefing and start the workflow without further questions.
 
 ## 4. Workflow for complexity

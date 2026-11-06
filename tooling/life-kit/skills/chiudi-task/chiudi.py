@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
-"""
-Close a task by saving its report as a note in the Life tree brain, regenerating
-the brain index, and committing and pushing the note. Uses only the standard
-library.
+"""Store task reports in the Life tree brain and publish the generated note.
 
-The skill writes the report (`.claude/chiusure/YYYY-MM-DD-<slug>.md`). This
-script handles the step that could otherwise be omitted: adding it to the
-versioned brain.
+The skill writes the report to
+`.claude/closures/YYYY-MM-DD-<slug>.md`; this module copies it into the versioned
+brain, refreshes the brain index, commits the note, and pushes it. Standard
+library only.
 
 Exit codes:
-  0 - completed, or the note was not saved (the `brain: ...` line reports the
-      result; the work remains in the project repository and the brain is its
-      memory)
+  0 - success, or the note was not stored (the `brain: ...` line explains why;
+      the task work remains in the project repository)
   1 - the report file cannot be read
 
-No files outside Life are required: find the brain with
-`python -m suite_core.nodes brain-root` and the framework with `framework-root`.
+The brain and framework are located through `brain-root` and `framework-root`.
 """
 
 import argparse
@@ -51,16 +47,16 @@ def _radice_repo(cwd):
 
 
 def _radice_nodo(cwd):
-    """Return the NODE root, which is not the current root inside a worktree.
+    """Return the node root, which differs from the current root in a worktree.
 
     `--show-toplevel` in a linked worktree returns the worktree directory, whose
-    basename is the *task* name. Deriving the slug from it would save the note
-    under an invented node. `--git-common-dir` always points to the main
-    checkout's `.git` directory instead.
+    basename is the task name. Deriving the slug from it would store the note
+    under a fabricated node. `--git-common-dir` always points to the main
+    checkout's `.git` directory.
     """
     rc, out = _git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir")
     comune = out.strip() if rc == 0 else ""
-    # `--path-format` has existed since Git 2.31; without it, `out` is an error.
+    # `--path-format` was added in Git 2.31; older versions return an error.
     if comune and os.path.isabs(comune) and os.path.basename(comune) == ".git":
         principale = os.path.dirname(comune)
         if os.path.isdir(principale):
@@ -69,10 +65,10 @@ def _radice_nodo(cwd):
 
 
 def _slug_nodo(cwd):
-    """Return `slug` from node.config, or the lowercase basename.
+    """Return `slug` from node.config, or the lowercase directory name.
 
-    Both values come from the **node** root (see `_radice_nodo`). The basename
-    loses its leading dot: a hidden directory is not a brain node.
+    Both are resolved from the **node** root (see `_radice_nodo`). Strip a
+    leading dot because a hidden directory is not a brain node.
     """
     radice = _radice_nodo(cwd)
     try:
@@ -87,7 +83,7 @@ def _slug_nodo(cwd):
 
 
 def _id_nodo(cwd):
-    """Return `taxonomy.id` from node.config (the graph node key), or None."""
+    """Return `taxonomy.id` from node.config (the graph key), or None."""
     try:
         with open(os.path.join(_radice_nodo(cwd), "node.config"), encoding="utf-8") as fh:
             valore = (json.load(fh).get("taxonomy") or {}).get("id")
@@ -103,9 +99,8 @@ def _id_nodo(cwd):
 def _framework_shared(radice_nodo):
     """Return the framework's `<Life>/packages/shared` directory, or None.
 
-    Use `LIFE_FRAMEWORK_DIR` when set; otherwise look for a `Life` directory
-    beside the node (nodes use a flat layout such as `$SRV_ROOT/Life` and
-    `$SRV_ROOT/<Node>`), walking up parent directories.
+    Use `LIFE_FRAMEWORK_DIR` when set; otherwise search parent directories for
+    a sibling `Life` directory.
     """
     candidati = []
     if os.environ.get("LIFE_FRAMEWORK_DIR"):
@@ -129,7 +124,7 @@ def _framework_root(radice_nodo):
 
 
 def _python_framework(condivisi):
-    """Return the first interpreter that can import suite_core (Life venv, then current)."""
+    """Return the first interpreter that can import suite_core (framework venv, then current)."""
     ambiente = dict(os.environ, PYTHONPATH=condivisi)
     candidati = [
         os.path.join(condivisi, ".venv", *parti)
@@ -154,7 +149,7 @@ def _python_framework(condivisi):
 
 
 def _brain_root_cli(radice_nodo):
-    """Return the framework's `brain-root --node <root>` result, or None if unavailable."""
+    """Run the framework's `brain-root --node <root>` command, or return None."""
     condivisi = _framework_shared(radice_nodo)
     if not condivisi:
         return None
@@ -177,16 +172,18 @@ def _brain_root_cli(radice_nodo):
 
 
 def _brain_istanza(radice_nodo):
-    """Return the brain for the INSTANCE that contains the node.
+    """Return the brain for the instance that contains the node.
 
-    Check three sources, from most explicit to most derived:
+    Check these sources from most explicit to most derived:
 
-    1. `LIFE_INSTANCE_DIR`, the canonical tree selector;
+    1. `LIFE_INSTANCE_DIR`, the canonical instance selector;
     2. a sibling `life-*/brain` found while walking up from the node root. If
-       two trees share a bucket, the result is ambiguous, so continue to step 3;
+       multiple instances share a bucket, the result is ambiguous and lookup
+       continues to step 3;
     3. the framework's `python -m suite_core.nodes brain-root --node <root>`.
 
-    If none is available, return None and report that the note was not saved.
+    If no source resolves the brain, return None and report that the note was
+    not stored.
     """
     esplicito = os.environ.get("LIFE_INSTANCE_DIR")
     if esplicito:
@@ -214,12 +211,11 @@ def _brain_istanza(radice_nodo):
 
 
 def _nodi_noti(brain, radice_nodo=None):
-    """Return known slugs where a closure note can be saved without inventing a node.
+    """Return known slugs where a closure can be stored without inventing a node.
 
-    Check three sources: existing directories under the brain's `nodi/`, the
-    tree graph beside the brain, and the Life framework graph. Falling back to
-    the basename would create a node for any directory, leaving notes about
-    work on that node impossible to find.
+    The sources are existing directories in the brain's `nodi/`, the instance
+    graph beside the brain, and the Life framework graph. Falling back to a
+    directory basename would invent nodes and make their notes hard to find.
     """
     noti = set()
     try:
@@ -259,11 +255,10 @@ def _etichetta_issue(radice, resoconto, esplicita=None, percorso_resoconto=None)
     """Return the closed issue number, or a short label when there is none.
 
     Accept only an **explicit closing reference** (`Closes #N`) in the report:
-    reports can mention issues they do not close, and recent commits in a shared
+    reports may mention issues they do not close, and recent commits in a shared
     repository may belong to anyone. Otherwise use the report filename
-    (`YYYY-MM-DD-<slug>.md` -> `<slug>`), chosen by the person who did the work.
-    The label becomes the brain filename; an incorrect label makes the note
-    harder to find by issue number.
+    (`YYYY-MM-DD-<slug>.md` -> `<slug>`). The label becomes the brain filename,
+    so choosing the wrong issue would make the note hard to find.
     """
     if esplicita:
         return str(esplicita).lstrip("#")
@@ -280,11 +275,11 @@ def _etichetta_issue(radice, resoconto, esplicita=None, percorso_resoconto=None)
 
 
 def _frontmatter(testo, slug, etichetta, oggi):
-    """Build frontmatter that makes the closure a brain note rather than a loose file.
+    """Build frontmatter that makes the closure a brain note.
 
     The brain is a corpus: lint requires title/summary/tags/status/created/
-    updated on every `.md` under `nodi/`. Do not write `classification` here;
-    it is inherited from `brain/nodi/_index.md`.
+    updated on every `.md` in `nodi/`. Do not set `classification` here; it is
+    inherited from `brain/nodi/_index.md`.
     """
     righe = [r.rstrip() for r in testo.splitlines()]
 
@@ -308,7 +303,7 @@ def _frontmatter(testo, slug, etichetta, oggi):
     for blocco in blocchi:
         if blocco[0].startswith(("#", "-", "*", "|", ">", "`", "---")):
             continue
-        if re.match(r"^\d+[.)]\s", blocco[0]):  # numbered list
+        if re.match(r"^\d+[.)]\s", blocco[0]):  # elenco numerato
             continue
         sommario = " ".join(blocco)
         break
@@ -322,7 +317,7 @@ def _frontmatter(testo, slug, etichetta, oggi):
             else sommario[:197].rsplit(" ", 1)[0] + "..."
         )
     if not sommario:
-        sommario = f"Task closure report #{etichetta} for node {slug}."
+        sommario = f"Closure report for task #{etichetta} on node {slug}."
 
     # Double quotes are the only character that would break the YAML scalar.
     def _yaml(v):
@@ -345,19 +340,18 @@ def _frontmatter(testo, slug, etichetta, oggi):
 
 
 def _rigenera_indice(brain, radice_nodo):
-    """Regenerate the brain's index.md/llms.txt/showcase.md. Return (success, note).
+    """Regenerate the brain's index.md/llms.txt/showcase.md; return (success, message).
 
-    The process saving the note is the only one that knows to regenerate its
-    brain index. If the framework is unavailable or cannot import suite_core,
-    this is not an error: the note remains and the index will be regenerated by
-    the next `wiki-sync` run. Report that result to the caller.
+    The caller storing the note is responsible for refreshing its brain index.
+    If the framework is unavailable or cannot import suite_core, keep the note;
+    the next `wiki-sync` can regenerate the index, and report the condition.
     """
     condivisi = _framework_shared(radice_nodo)
     if not condivisi:
-        return False, "Index not regenerated (Life not found beside the node; set LIFE_FRAMEWORK_DIR)"
+        return False, "index not regenerated (Life framework not found beside node; set LIFE_FRAMEWORK_DIR)"
     py, ambiente = _python_framework(condivisi)
     if not py:
-        return False, "Index not regenerated (no Python interpreter can import suite_core)"
+        return False, "index not regenerated (no Python interpreter can import suite_core)"
     nodo = os.path.dirname(brain.rstrip("/\\"))
     try:
         esito = subprocess.run(
@@ -368,26 +362,26 @@ def _rigenera_indice(brain, radice_nodo):
             timeout=300,
         )
     except Exception as e:
-        return False, f"Index not regenerated ({e!r})"
+        return False, f"index not regenerated ({e!r})"
     if esito.returncode == 0:
-        return True, "Index regenerated"
+        return True, "index regenerated"
     coda = (esito.stdout + esito.stderr).strip().splitlines()
     return False, f"wiki-sync failed ({coda[-1] if coda else esito.returncode})"
 
 
 def porta_nel_brain(percorso_resoconto, cwd, issue=None):
-    """Copy the report into the tree brain, then commit and push it.
+    """Copy the report into the instance brain, commit it, and push it.
 
-    Return a status line to print. Never raise: the brain stores memory, while
-    the closure records completed work. The latter must not depend on the
-    former, but any failure must be reported.
+    Return a status line for printing. Never raise: the brain is memory and the
+    closure is the task work, so the latter must not depend on the former. Any
+    failure is reported.
     """
     nodo = _radice_nodo(cwd)
     brain = _brain_istanza(nodo)
     if not brain or not os.path.isdir(brain):
         return (
-            f"brain: no tree brain found for this node ({brain or 'missing'}); "
-            "note not saved - set LIFE_INSTANCE_DIR or check "
+            f"brain: no instance brain for this node ({brain or 'missing'}); "
+            "note not stored - set LIFE_INSTANCE_DIR or check "
             "`python -m suite_core.nodes brain-root`"
         )
 
@@ -396,7 +390,7 @@ def porta_nel_brain(percorso_resoconto, cwd, issue=None):
         with open(percorso_resoconto, encoding="utf-8") as fh:
             testo = fh.read()
     except OSError as e:
-        return f"brain: report cannot be read ({e}); note not saved"
+        return f"brain: report cannot be read ({e}); note not stored"
 
     slug = _slug_nodo(radice)
     noti = _nodi_noti(brain, nodo)
@@ -408,8 +402,8 @@ def porta_nel_brain(percorso_resoconto, cwd, issue=None):
             slug = id_nodo
     if slug not in noti:
         return (
-            f"brain: node \"{slug}\" is not present in the brain or graph; "
-            "note not saved - add a node.config with the correct slug to the repository"
+            f"brain: node \"{slug}\" is missing from both the brain and graph; "
+            "note not stored - add a node.config with the correct slug to the repository"
         )
     etichetta = _etichetta_issue(radice, testo, issue, percorso_resoconto)
     oggi = datetime.date.today().isoformat()
@@ -433,12 +427,12 @@ def porta_nel_brain(percorso_resoconto, cwd, issue=None):
     relativo = os.path.relpath(destinazione, brain)
     rc, _ = _git(brain, "rev-parse", "--git-dir")
     if rc != 0:
-        return f"brain: {relativo} copied (not a Git repository; no commit created)"
+        return f"brain: copied {relativo} (not a Git repository; no commit created)"
 
-    # The index goes into the same commit as the note; otherwise it falls behind.
+    # Commit the index with the note so it does not become stale.
     rigenerato, nota_indice = _rigenera_indice(brain, nodo)
 
-    # Only these files, never `-A`: other sessions may be in the brain.
+    # Stage only these files, never `-A`; other sessions may have brain changes.
     gestiti = ["index.md", "llms.txt", "showcase.md"] if rigenerato else []
     percorsi = [relativo] + [
         g for g in gestiti if os.path.isfile(os.path.join(brain, g))
@@ -458,17 +452,17 @@ def porta_nel_brain(percorso_resoconto, cwd, issue=None):
     rc, remoti = _git(brain, "remote")
     if rc != 0 or not remoti.strip():
         return (
-            f"brain: {relativo} committed, {nota_indice} (no remote configured)"
+            f"brain: committed {relativo}, {nota_indice} (no remote configured)"
         )
 
     rc, out = _git(brain, "push")
     if rc != 0:
-        # Usually the remote moved ahead: rebase and try again.
+        # The remote may have advanced; rebase and retry.
         _git(brain, "pull", "--rebase")
         rc, out = _git(brain, "push")
     if rc != 0:
-        return f"brain: {relativo} committed but not pushed - run `git -C {brain} push` manually ({out.splitlines()[-1] if out else rc})"
-    return f"brain: {relativo} saved and pushed, {nota_indice}"
+        return f"brain: committed {relativo} but not pushed - run `git -C {brain} push` manually ({out.splitlines()[-1] if out else rc})"
+    return f"brain: stored and pushed {relativo}, {nota_indice}"
 
 
 def main():

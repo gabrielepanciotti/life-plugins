@@ -1,84 +1,78 @@
 ---
 name: allinea-opencode
-description: Align OpenCode with a Life node (agent mirroring, `opencode.json` with suite-mcp, global config, `@suite/*` links). Use when someone says “align OpenCode,” “set up OpenCode for this project,” “OpenCode for the node,” or “prepare OpenCode like Claude Code,” once per node, or when OpenCode on a node cannot see suite-mcp or the agents.
+description: Allinea OpenCode a un nodo Life (mirror degli agenti, `opencode.json` con suite-mcp, config globale, link `@suite/*`). Usala quando si dice «allinea opencode», «setup opencode per questo progetto», «opencode per il nodo», «prepara opencode come Claude Code», una volta per nodo o quando OpenCode su un nodo non vede suite-mcp o gli agenti.
 ---
 
-# Align OpenCode with a Life node
+# Allinea OpenCode a un nodo Life
 
-OpenCode on a Life node is **derived** from the Claude Code side, not copied by
-hand: skills are already loaded from `~/.claude/skills/`, agents are *mirrored*,
-and the global config (`~/.config/opencode/opencode.jsonc`) and the node's
-`opencode.json` are **generated** by the suite. The rule: **one source
-(`~/.claude`) + one generator (`suite_core.blueprint.opencode`) + no manual sync**.
+OpenCode su un nodo Life è **derivato** dal lato Claude Code, non copiato a mano:
+skills si caricano già da `~/.claude/skills/`, gli agenti vengono *mirror-ati*, la
+config globale (`~/.config/opencode/opencode.jsonc`) e l'`opencode.json` di nodo
+sono **generati** dalla suite. La regola: **una fonte (`~/.claude`) + un generatore
+(`suite_core.blueprint.opencode`) + zero sync manuale**.
 
-## Requirements
+## Serve
 
-- Life's virtual environment with `suite_core` installed (the package is in `$PATH_LIFE/packages/shared`): `.venv/bin/python` on Linux, `.venv/Scripts/python` on Windows. If the virtual environment is missing: `python3.13 -m venv .venv` (Linux) or `py -3.13 -m venv .venv` (Windows), then run `.venv/bin/pip install -e packages/shared` from the Life root. Verify with `python -c "import suite_core"`.
-- OpenCode installed: `npm install -g opencode-ai`.
+- Il venv di Life con `suite_core` installato (il pacchetto sta in `$PATH_LIFE/packages/shared`): `.venv/bin/python` su Linux, `.venv/Scripts/python` su Windows. Se manca il venv: `python3.13 -m venv .venv` (Linux) o `py -3.13 -m venv .venv` (Windows), poi `.venv/bin/pip install -e packages/shared` dalla radice di Life. Verifica con `python -c "import suite_core"`.
+- OpenCode installato: `npm install -g opencode-ai`.
 
-## Which case applies?
+## Bivio: quale caso?
 
-- **First setup for a node**: the node has no `.opencode/`. Create the folder (`mkdir .opencode`), then run all the commands below.
-- **An already aligned node cannot see suite-mcp or the agents**: skip `mkdir`, run `apply --nearest` and `opencode <dir>`, then verify.
-- **The global config changed** (new agents in `~/.claude/agents/`): just run `opencode --global`.
+- **Primo setup di un nodo**: il nodo non ha `.opencode/`. Crea la cartella (`mkdir .opencode`) e poi lancia tutti i comandi qui sotto.
+- **Nodo già allineato che non vede suite-mcp o gli agenti**: salta `mkdir`, lancia `apply --nearest` e `opencode <dir>`, poi la verifica.
+- **Config globale cambiata** (nuovi agenti in `~/.claude/agents/`): basta `opencode --global`.
 
-## The one command sequence (for a node)
+## Il comando unico (per un nodo)
 
-On the device, using Python from Life's virtual environment (shown here as `python`):
+Dal device, con il Python del venv di Life (qui scritto `python`):
 
 ```
 python -m suite_core.nodes apply --nearest <dir>   # .mcp.json + opencode.json + agents + mirror .opencode
-python -m suite_core.nodes opencode --global        # global agents + ~/.config/opencode/opencode.jsonc
-python -m suite_core.nodes opencode <dir>           # mirror the node's .opencode/agents
-python -m suite_core.nodes link <dir>               # link @suite/design-system|i18n in the frontend
+python -m suite_core.nodes opencode --global        # agenti globali + ~/.config/opencode/opencode.jsonc
+python -m suite_core.nodes opencode <dir>           # mirror .opencode/agents del nodo
+python -m suite_core.nodes link <dir>               # link @suite/design-system|i18n nel frontend
 ```
 
-Then **restart OpenCode** (the config does not hot-reload).
+Poi **riavvia OpenCode** (la config non è hot-reload).
 
-## Final verification
+## Verifica finale
 
-- [ ] 1. `<node>/opencode.json` exists and its `command` points to an interpreter that exists on this device (`test -x <path>`). If not, rerun `apply --nearest <dir>`.
-- [ ] 2. `<node>/.opencode/agents/` contains the same agents as `<node>/.claude/agents/`. If not, rerun `opencode <dir>`.
-- [ ] 3. Restart OpenCode and list the `suite-mcp` tools (`opencode mcp list`, or use the interface): they should appear. If not, go back to step 1.
+- [ ] 1. `<nodo>/opencode.json` esiste e il suo `command` punta a un interprete che esiste su questo device (`test -x <path>`). Se no, rilancia `apply --nearest <dir>`.
+- [ ] 2. `<nodo>/.opencode/agents/` contiene gli stessi agenti di `<nodo>/.claude/agents/`. Se no, rilancia `opencode <dir>`.
+- [ ] 3. Riavvia OpenCode ed elenca i tool di `suite-mcp` (`opencode mcp list`, oppure dall'interfaccia): devono comparire. Se no, torna al passo 1.
 
-Finish only when all three checks pass.
+Finisci solo quando i tre controlli passano.
 
-## Opt in: the `.opencode/` folder
+## Opt-in: la cartella `.opencode/`
 
-As with agent mirroring, a node joins the OpenCode workflow **when `.opencode/`
-is present**: without that folder, `apply` does not generate `opencode.json` and
-`opencode <dir>` does not write the mirror. To enable a node, run `mkdir .opencode`.
+Come per il mirror degli agenti, il nodo entra nel circuito OpenCode **con la
+presenza di `.opencode/`**: senza quella cartella `apply` non genera `opencode.json`
+e `opencode <dir>` non scrive il mirror. Per attivare un nodo basta `mkdir .opencode`.
 
-## What generates what
+## Cosa genera cosa
 
-| File | Generated by | Contents |
+| File | Generato da | Contenuto |
 |---|---|---|
-| `~/.config/opencode/opencode.jsonc` | `opencode --global` | Global MCPs (context7, playwright, chrome-devtools) + `instructions` → `CLAUDE.shared.md` |
-| `~/.config/opencode/agents/*.md` | `opencode --global` | mirror of `~/.claude/agents/` |
-| `<node>/.opencode/agents/*.md` | `apply` / `opencode <dir>` | mirror of `<node>/.claude/agents/` |
-| `<node>/opencode.json` | `apply` (if `.opencode/` is present) | `suite-mcp` in OpenCode format (`type: local`, `command` array, `environment`) |
+| `~/.config/opencode/opencode.jsonc` | `opencode --global` | MCP globali (context7, playwright, chrome-devtools) + `instructions` → `CLAUDE.shared.md` |
+| `~/.config/opencode/agents/*.md` | `opencode --global` | mirror di `~/.claude/agents/` |
+| `<nodo>/.opencode/agents/*.md` | `apply` / `opencode <dir>` | mirror di `<nodo>/.claude/agents/` |
+| `<nodo>/opencode.json` | `apply` (se `.opencode/` presente) | `suite-mcp` in formato OpenCode (`type: local`, `command` array, `environment`) |
 
-## Why `opencode.json` is generated and gitignored
+## Perché `opencode.json` è generato e gitignored
 
-It contains the suite-mcp interpreter's **absolute path** and the absolute
-`VAULT_PATH`: both are device-specific, so the file is gitignored (managed block,
-next to `.mcp.json`) and regenerated for each device by `apply`. The historical
-bug (a dead Claude scratchpad path) came from an `opencode.json` **written by
-hand**: `emit_opencode_json` now always rewrites command+environment, so it can no
-longer go stale.
+Porta il **path assoluto** dell'interprete suite-mcp e il `VAULT_PATH` assoluto:
+device-specific, quindi gitignored (blocco managed, accanto a `.mcp.json`) e
+rigenerato per-device da `apply`. Il bug storico (path di scratchpad Claude morto)
+nasceva da un `opencode.json` **scritto a mano**: ora `emit_opencode_json` riscrive
+sempre command+environment, quindi non può più marcire.
 
-## Known limitation: no dynamic hooks
+## Limite noto: niente hook dinamici
 
-OpenCode does not replicate Claude Code hooks (SessionStart `suite-apply`, Stop
-auto-commit/push) through the same mechanism: it has **plugins** (`config`/`event`/
-`tool.execute.before/after`). The generator handles the static part; the dynamic
-part would require a dedicated JS/TS plugin, which has not been written yet.
+OpenCode non replica gli hook di Claude Code (SessionStart `suite-apply`, Stop
+auto-commit/push) con lo stesso meccanismo: ha i **plugin** (`config`/`event`/
+`tool.execute.before/after`). La parte statica è coperta dal generatore; quella
+dinamica richiederebbe un plugin JS/TS dedicato — non ancora scritto.
 
-## Examples
+## Prove
 
-`evals/prove.md`: three real requests with their expected results. Try them with
-and without the skill in a new conversation.
-
-## Instance specifics
-
-Run `python <this skill's base directory>/../../scripts/skill-overlay.py allinea-opencode` and apply what it prints (it may print nothing).
+`evals/prove.md`: tre richieste vere con il risultato atteso. Provale senza e con la skill, in una conversazione nuova.

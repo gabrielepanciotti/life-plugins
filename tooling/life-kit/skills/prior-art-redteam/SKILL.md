@@ -1,148 +1,164 @@
 ---
 name: prior-art-redteam
 description: >
-  Two quality gates for specs and plans: GATE A "prior art" (search GitHub, docs, blogs, forums, and papers for who has already solved the problem BEFORE deciding) and GATE B "red team" (adversarially dismantle a written plan or phase, independently refuting each finding). Trigger when the user asks for an adversarial/critical review of completed phases or future plans, similar projects or prior solutions, flaws in a plan, avoiding reinvention, or "standing on the shoulders of giants." Requires the Workflow tool (multi-agent); use only with the user’s explicit opt-in (ultracode or a direct request).
+  Two quality gates for specs and plans: GATE A "prior art" (search online on GitHub,
+  docs, blogs, forums, and papers to find who has already solved the problem, BEFORE
+  deciding) and GATE B "red team" (adversarially dismantle a written plan or phase,
+  with an independent refutation of every finding). Activate when the user asks to
+  review completed phases or future plans adversarially/critically, look for similar
+  projects or who has already done it, find flaws in a plan, avoid reinventing the
+  wheel, or "stand on the shoulders of giants." Requires the Workflow tool
+  (multi-agent) — use only with the user's explicit opt-in (ultracode or a direct
+  request).
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Workflow, WebSearch, WebFetch, ToolSearch, Agent
 ---
 
 # Prior Art & Red Team — two gates, not one
 
-## Principle
+## The principle
 
-A plan written on its own inherits two systematic flaws: **anchoring** (initial ideas
-become constraints without ever being challenged) and **provincialism**
+A plan written in isolation inherits two systematic flaws: **anchoring** (the first
+ideas become constraints without ever being questioned) and **provincialism**
 (solving from scratch a problem the world has already solved better).
 
-Address these with two distinct gates at different points. **They are not the same gate moved.**
+They are addressed by two distinct gates, at different points. **They are not the
+same gate moved to another point.**
 
 | | **GATE A — Prior Art** | **GATE B — Red Team** |
 |---|---|---|
 | When | *Before* the spec freezes decisions | *After* the plan is concrete, *before* writing code |
 | Question | "Who has already done it, and how?" | "Where does this plan break?" |
-| Direction | Expands the set of options | Narrows it: removes what does not hold up |
+| Direction | Broadens the space of options | Narrows it: removes what does not hold up |
 | Cost | Low/medium, broad | High, deep |
-| Output | Menu of options + known antipatterns | Confirmed flaws + open decisions |
+| Output | Menu of options + known anti-patterns | Confirmed flaws + open decisions |
 
-> **Why A comes first.** If you search for prior art after writing the spec, the research
-> becomes confirmation: you read the giants looking for someone who agrees with you. The giants help
-> define *the menu*, not validate the dish you have already ordered.
+> **Why A comes first.** If you search for prior art after writing the spec, the
+> search becomes confirmation: you read the giants looking for someone who agrees
+> with you. The giants help define *the menu*, not validate the dish you already
+> ordered.
 >
-> **Why B comes later.** A red team on a plan that does not yet exist produces
+> **Why B comes later.** A red team on a plan that does not exist yet produces
 > generalities. An attack needs a concrete target: files, lines, sequences.
 
-## How it fits the normal workflow
+## How it fits into the normal workflow
 
 ```
-brainstorming ──► [GATE A: prior-art] ──► spec ──► piano ──► [GATE B: red-team] ──► build
+brainstorming ──► [GATE A: prior-art] ──► spec ──► plan ──► [GATE B: red-team] ──► build
                    effort medio, largo                        effort massimo, profondo
                    ~5 agenti web                              ~5 audit + 5 refutatori
 ```
 
-If the plan already exists (a common case: "review the completed phases"), run **B on what
-is done** and **A on what remains to be decided**, in parallel — this is the combined case,
-covered by the template.
+If the plan already exists (the common case: "review the completed phases"), run
+**B on what is done** and **A on what remains to be decided**, in parallel — this is
+the combined case covered by the template.
 
 ## Engagement rule
 
 Use the Workflow tool **only** with the user's explicit opt-in (the word `ultracode`,
-a direct request for multi-agent orchestration, or invocation of this skill).
-Without opt-in: propose the gate, estimate the cost, and ask.
+a direct request for multi-agent orchestration, or invoking this skill). Without
+opt-in: propose the gate, estimate the cost, and ask.
 
 ---
 
 ## Procedure
 
-### 0. Verify the basics yourself — do not delegate this
+### 0. Manual grounding — do not delegate it
 
-Before launching any agent, verify the basic facts **yourself**. Agents inherit your mistaken assumptions and amplify them ×N.
+Before launching any agent, verify the basic facts **yourself**. Agents inherit your
+mistaken assumptions and amplify them ×N.
 
-- [ ] The paths really exist (watch for junctions/symlinks: two different paths may
+- [ ] The paths really exist (watch for junctions/symlinks: two different paths can
       point to the same volume — ask git, which reports the real path)
-- [ ] `git log --oneline -10` + `git status --porcelain | wc -l` — does the stated status
-      match reality?
+- [ ] `git log --oneline -10` + `git status --porcelain | wc -l` — does the stated
+      status match reality?
 - [ ] The cited documents exist and are **committed** (an untracked plan does not exist)
-- [ ] The artifacts that previous phases claim to have produced are on disk
+- [ ] Artifacts that earlier phases claim to have produced are on disk
 
-Put every anomaly found here in the agents’ prompts as **"anomaly to verify; do not assume it is correct"**: this makes it a concrete lead rather than noise.
+Include every anomaly found here in the agents' prompt as **"anomaly to verify, do
+not take it for granted"**: it becomes a concrete anchor instead of noise.
 
 ### 1. Break the target into attack areas
 
-Do not just say "review the plan." Give each agent a distinct attack angle and lens.
-Recurring angles (see `references/attack-catalog.md` for the full catalog):
+Do not just say "review the plan." Each agent needs an attack axis and a different
+*lens*. Recurring axes (see `references/attack-catalog.md` for the full catalog):
 
-- **Claims vs reality** — forensic: is what is claimed to be done actually done?
-- **Neutrality / coupling** — does the promised abstraction hold up or lose the domain?
-- **Contract** — idempotency, deletion, versioning, partial errors, auth, time
+- **Claims vs reality** — forensic: has what is claimed as done actually been done?
+- **Neutrality / coupling** — does the promised abstraction hold, or does it lose the domain?
+- **Contract** — idempotency, deletion, versioning, partial errors, auth, timing
 - **Plan** — what the plan *does not say*: data, identity, rollback, dual-run, tests
-- **Cross-cutting / ops** — deploy, secrets, backups, observability, cost/benefit
+- **Cross-cutting / ops** — deployment, secrets, backups, observability, cost/benefit
 
-### 2. Independent refutation — required
+### 2. Independent refutation — mandatory
 
-Pass every finding to a **second agent whose task is to prove the first agent wrong**.
+Send every finding to a **second agent whose task is to prove the first one wrong**.
 Without this step, a red team produces plausibility, not truth: LLMs generate
-credible critiques as easily as they generate credible code.
+credible criticisms as easily as they generate credible code.
 
-Verdicts: `REFUTED` (the evidence does not hold up or is already handled elsewhere — cite where) /
-`PARTIAL` (it exists, but its severity is overstated) / `CONFIRMED` (I tried to dismantle it and
-could not). The refuter must also state what the auditor **did not see** (`missed`).
+Verdicts: `REFUTED` (the evidence does not hold or the issue is already handled
+elsewhere — cite where) / `PARTIAL` (the issue exists but its severity is overstated)
+/ `CONFIRMED` (I tried to dismantle it and could not). The refuter must also state
+what the auditor **missed** (`missed`).
 
-Calibrate severity against the real system: `critical` only if it blocks the project or corrupts data.
-A concurrency problem in a two-user system is not `critical`.
+Calibrate severity against the real system: use `critical` only if it blocks the
+project or corrupts data. A concurrency issue in a two-user system is not `critical`.
 
-### 3. Prior art research — with constraints, or it is just a bibliography
+### 3. Prior-art research — constrain it, or it becomes a bibliography
 
-Always include these requirements in web research prompts:
+Always require the following in web prompts:
 
 - **Load the tools**: `ToolSearch(query: "select:WebSearch,WebFetch")`. Alternatively,
-  use the indexing tools from the `context-mode` plugin, if installed, to keep raw
+  use the indexing tools of the `context-mode` plugin, if installed, to keep raw
   bytes out of the context.
-- **At least 8 real sources with verifiable URLs.** If a page does not open, say so — never invent it.
+- **At least 8 real sources with verifiable URLs.** If a page does not open, say so —
+  never make one up.
 - **Extract the mechanism, not the name**: pattern name, data structure, API shape,
   model variables. "They use RRULE" ≫ "they handle recurrence."
 - **Verdict for each source**: `adopt` / `adapt` / `study` / `ignore`, with a reason.
-- **Look for failures**: who tried it and regretted it, closed `wontfix` issues, postmortems,
-  abandonment threads. This is the most valuable part and the one no one searches for spontaneously.
+- **Look for failures**: those who tried and regretted it, closed `wontfix` issues,
+  post-mortems, abandonment threads. This is the most valuable part and the one no
+  one searches for spontaneously.
 
-Always cover these sources: GitHub repositories (README + issues, not just the landing page), official
-documentation, technical blogs, forums (relevant Reddit communities, Hacker News, StackOverflow, project
-mailing lists), and papers if the problem is algorithmic. Search in both English **and** Italian.
+Always cover these sources: GitHub repos (README + issues, not just the landing
+page), official documentation, technical blogs, forums (industry Reddit, Hacker
+News, StackOverflow, project mailing lists), and papers if the problem is
+algorithmic. Search in both **English** and **Italian**.
 
 ### 4. Actionable synthesis
 
 The final report is not a list of links. Minimum structure:
 
 1. **Verdict in 10 lines** — can we proceed, yes or no?
-2. **Immediate blockers** — with the concrete command to resolve them
-3. **Confirmed flaws** by severity — `file:line` evidence, failure scenario, fix, phase
+2. **Immediate blockers** — with the concrete command to resolve each
+3. **Confirmed flaws** by severity — evidence `file:line`, breakage scenario, fix, phase
 4. **Missed gaps** — from the `missed` field
 5. **What we borrow from the giants** — source + mechanism + adopt/adapt/study/ignore
-6. **Antipatterns to avoid** — with the source that documents them
-7. **The uncomfortable question** — is the chosen approach justified? (always require an agent
-   to argue *against* the project's thesis, using data: lines of code, users, criteria
-   found in the sources)
+6. **Anti-patterns to avoid** — with the source that documents them
+7. **The uncomfortable question** — is the chosen approach justified? (Always require
+   one agent to argue *against* the project's thesis using data: lines of code, users,
+   criteria found in sources)
 8. **Revised plan** — correct sequence, exit criteria, verification milestones
 9. **Open decisions** — numbered, with options and a recommendation
 
-Write it to `docs/superpowers/reviews/<date>-<topic>.md`, never the repository root.
+Write it to `docs/superpowers/reviews/<date>-<topic>.md`. Never in the root.
 
 ---
 
 ## Template
 
 Ready-to-use Workflow script: `references/workflow-template.js`.
-Catalog of attack angles and questions by area: `references/attack-catalog.md`.
+Catalog of attack axes and questions by area: `references/attack-catalog.md`.
 
 Typical sizing: 5 auditors + 5 refuters + 5 researchers + 1 synthesizer = 16 agents.
-For an A-only gate: 5 researchers + 1 synthesizer. For a B-only gate: 5 + 5 + 1.
+For a gate-A-only run: 5 researchers + 1 synthesis. For a gate-B-only run: 5 + 5 + 1.
 
 ## Mistakes to avoid
 
 | Mistake | Why it hurts |
 |---|---|
-| Launching agents without manual grounding | You amplify a false premise ×N |
-| Skipping refutation | You get plausible critiques, not real flaws |
+| Launching agents without manual grounding | You amplify a wrong assumption ×N |
+| Skipping refutation | You get plausible criticisms, not real flaws |
 | Searching for prior art after the spec | It becomes confirmation, not discovery |
-| Asking "find problems" without an angle | 5 agents saying the same generic thing |
+| Asking "find problems" without an attack axis | 5 agents give the same generic answer |
 | Accepting sources without URLs | Hallucinations disguised as research |
 | Not asking anyone to argue *against* the project | The most costly bias remains intact |
 | Severity without calibration against the real system | Everything is `critical`, so nothing is critical |

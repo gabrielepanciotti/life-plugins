@@ -1,135 +1,136 @@
-# Attack Axis Catalog
+# Catalogo degli assi di attacco
 
-Choose **one axis per agent**. Different axes = different lenses = different findings.
-Five agents on the same axis produce the same generic finding five times.
-
----
-
-## A. Claims vs reality (forensics)
-
-The most underrated agent. It checks that what is *claimed as done* is actually *done*.
-
-- `git log` / `git show --stat` / `gh issue view N`: do the commits match the stated phases?
-- Do the promised artifacts exist on disk? (directories, migrations, containers, config files)
-- Is the working tree clean? Are deleted files still imported? Does the project actually compile?
-- For claimed tests: run the suite and report **actual numbers**, never estimates
-- Do cited documents exist? Are they committed? Is their last modification consistent with the stated date?
-- Runtime state: `docker ps`, health endpoint, migrations at head?
-
-Rule: every finding must cite **the command run and its output**.
-
-## B. Neutrality / coupling
-
-When a plan promises an abstraction ("generic engine", "neutral layer", "plugin"),
-check that the abstraction holds up instead of merely moving the problem elsewhere.
-
-- Does the "neutral" model carry fields that exist only for the original use case?
-- Does the core still reference entities from the specific domain?
-- Are there **two paths** (old and new)? Are they equivalent in capability? List every feature
-  reachable only through the old path — that is hidden debt
-- Who dereferences relationships that the new path leaves `NULL`?
-- How much of the UI assumes the local entity that is about to disappear?
-
-Required final question: *after the refactoring, does the original use case still work
-using **only** the new abstraction?* If not, list exactly what is missing.
-
-## C. Contract (API between services / modules)
-
-- **Idempotency**: partial retry, duplicates within a batch, races between two writes, atomicity
-- **Deletion / tombstone**: how does the consumer know a resource no longer exists?
-  Is there a full-sync reconciliation or only incremental sync? Phantom records?
-- **Versioning**: does the contract have a version? How does it evolve without breaking the consumer?
-- **Partial failures**: can we tell *which* records failed and *why*? Per-record errors or
-  all-or-nothing?
-- **Auth**: constant-time comparison, secret rotation, can one origin impersonate another?
-- **Validation**: mutually exclusive fields, ranges, references to nonexistent entities,
-  **cyclic dependencies**, values that cross midnight
-- **Identity**: two databases, two user tables — which is the source of truth? What if they diverge?
-- **Time**: time zone, DST, ISO week, who decides the window
-- **Read-back**: pagination, consistency during a write, how does the consumer know something
-  is new (polling? push? webhook?)
-- **Observability**: can we diagnose "my X never arrived" while distinguishing
-  *not sent* / *sent but rejected* / *accepted but discarded by the logic*?
-
-## D. The plan — what it does NOT say
-
-The plan describes the happy path. Attack everything else.
-
-- **Data migration**: is there real data? ID mapping? FKs crossing the new
-  boundary? Backfill? **Rollback?**
-- **Identity / auth**: does the user have to authenticate twice? Cookies, domains, CORS between ports?
-- **Ownership**: who owns the bot / channel / scheduled job / cron?
-- **Frontend**: two SPAs? Does the user navigate between two ports? One shell? Does the plan sidestep this?
-- **Realtime**: data lives here, names live there — denormalization or cross-service N+1?
-- **Sequence and reversibility**: when is the old code deleted? Is there a **dual-run**?
-  How is equivalence checked *before* deletion (shadow run, output comparison)?
-- **Tests**: how do you test a flow that crosses two services? Contract tests? Where do
-  existing tests that touch the moved domain go?
-- **Real scope**: count it (`wc -l`, `git ls-files | wc -l`). Is the plan undersized?
-- **Deferrals**: "we'll detail this just in time" is often an excuse to postpone the
-  hard decisions. List them.
-
-Required finding: *if followed to the letter, how long does this plan leave the system nonfunctional?*
-
-## E. Cross-cutting / operations
-
-- **Deploy**: ordering of components with a shared contract, migrations, downtime
-- **Backup / restore**: two DBs cannot have a transactionally consistent backup — how is this handled?
-- **Secrets**: how is a secret generated, shared, and **rotated** between two repos?
-- **Shared dependencies**: packages linked in multiple places — versioning, drift, who updates them
-- **Observability**: correlated logs? Propagated request ID? If a nightly job fails,
-  does anyone notice?
-- **Ports / resources**: are they actually free and registered?
-
-## F. Runtime reachability — the axis everyone forgets
-
-Axes A–E look at the **change**. This one looks at **what is already there** and asks one
-question: *can a real client actually follow the path claimed to work, today?*
-
-- Is every "ready" component **mounted** and **reachable**? Middleware, gate, auth, proxy,
-  CORS, firewall: does something return 403/404 before the right code even runs?
-- Do "new" functions have **production callers**? (`grep` for the name: if it appears only in its
-  definition and docstrings, nothing calls it)
-- Do green tests prove the real path, or do they run with an active **bypass** (`APP_ENV=test`,
-  mocked middleware, fixture that skips auth)? A gate disabled in tests is a blind spot
-  by definition: 400 green tests say nothing about that path.
-- Does the deployed code match the repo? Was the container rebuilt?
-
-It is worth assigning **an entire agent** to this. In a red team review of this project's split,
-five auditors focused on the change produced 89 findings without noticing that the central
-contract in the epic returned 403 to everyone, because the middleware did not exempt it
-and the tests ran with the gate disabled. The synthesizer found it by chance while checking something else.
-
-## G. The uncomfortable question (always present)
-
-An agent must argue **against** the project's thesis, using data:
-
-> "Is this approach necessary? What is the cheapest alternative that achieves the same
-> goal?"
-
-It must provide actual numbers (lines of code, endpoints, users, usage frequency) and decision
-criteria found in sources, not opinions. This is the finding no other agent will produce
-spontaneously, because all the others work *within* the premise.
+Scegli **un asse per agente**. Assi diversi = lenti diverse = findings diversi.
+Cinque agenti sullo stesso asse producono cinque volte lo stesso finding generico.
 
 ---
 
-# Prior-art research axes
+## A. Claims vs reality (forense)
 
-One agent per topic. Every prompt ends with an **adversarial question** that looks for failures.
+L'agente più sottovalutato. Verifica che ciò che è *dichiarato fatto* sia *fatto*.
 
-| Topic | What to look for |
+- `git log` / `git show --stat` / `gh issue view N`: i commit corrispondono alle fasi dichiarate?
+- Gli artefatti promessi esistono su disco? (directory, migrazioni, container, file di config)
+- Il working tree è pulito? File cancellati ancora importati? Il progetto compila davvero?
+- I test dichiarati: esegui la suite e riporta **numeri reali**, mai stimati
+- Documenti citati: esistono? sono committati? l'ultima modifica è coerente con la data dichiarata?
+- Stato runtime: `docker ps`, health endpoint, migrazioni a head?
+
+Regola: ogni finding deve citare **il comando eseguito e il suo output**.
+
+## B. Neutralità / accoppiamento
+
+Quando un piano promette un'astrazione ("motore generico", "layer neutro", "plugin"),
+verifica che l'astrazione regga invece di limitarsi a spostare il problema.
+
+- Il modello "neutro" porta campi che esistono solo per il caso d'uso originale?
+- Il core referenzia ancora entità del dominio specifico?
+- Esistono **due percorsi** (vecchio e nuovo)? Sono equipotenti? Elenca ogni feature
+  raggiungibile solo dal percorso vecchio — è il debito nascosto
+- Chi dereferenzia le relazioni che il percorso nuovo lascia `NULL`?
+- Quanta UI presume l'entità locale che sta per sparire?
+
+Domanda finale obbligatoria: *dopo il refactoring, il caso d'uso originale funziona ancora
+passando **solo** dalla nuova astrazione?* Se no, elenca esattamente cosa manca.
+
+## C. Contratto (API fra servizi / moduli)
+
+- **Idempotenza**: retry parziale, duplicati interni al batch, race di due scritture, atomicità
+- **Cancellazione / tombstone**: come sa il consumer che una risorsa non esiste più?
+  Esiste un full-sync di riconciliazione o solo l'incrementale? Record fantasma?
+- **Versioning**: il contratto ha una versione? Come evolve senza rompere il consumer?
+- **Fallimenti parziali**: si sa *quali* record hanno fallito e *perché*? Errori per-record o
+  tutto-o-niente?
+- **Auth**: confronto a tempo costante, rotazione del segreto, un origin può spacciarsi per un altro?
+- **Validazione**: campi mutuamente esclusivi, range, riferimenti a entità inesistenti,
+  **dipendenze cicliche**, valori che scavallano la mezzanotte
+- **Identità**: due database, due tabelle utenti — chi è la fonte di verità? Cosa se divergono?
+- **Tempo**: fuso, DST, settimana ISO, chi decide la finestra
+- **Read-back**: paginazione, consistenza durante una scrittura, come sa il consumer che c'è
+  qualcosa di nuovo (polling? push? webhook?)
+- **Osservabilità**: si riesce a diagnosticare "il mio X non è arrivato" distinguendo
+  *non inviato* / *inviato ma rifiutato* / *accettato ma scartato dalla logica*?
+
+## D. Il piano — cosa NON dice
+
+Il piano descrive il percorso felice. Attacca tutto il resto.
+
+- **Migrazione dati**: esistono dati reali? Mapping degli id? FK che attraversano il nuovo
+  confine? Backfill? **Rollback?**
+- **Identità / auth**: l'utente deve autenticarsi due volte? Cookie, domini, CORS fra le porte?
+- **Proprietà**: chi possiede il bot / il canale / il job schedulato / il cron?
+- **Frontend**: due SPA? l'utente naviga fra due porte? shell unica? Il piano lo elude?
+- **Realtime**: i dati stanno di qua, i nomi di là — denormalizzazione o N+1 cross-servizio?
+- **Sequenza e reversibilità**: quando si cancella il vecchio codice? C'è **dual-run**?
+  Come si verifica l'equivalenza *prima* di cancellare (shadow run, confronto degli output)?
+- **Test**: come si testa un flusso che attraversa due servizi? Contract test? E i test
+  esistenti che toccano il dominio spostato, dove vanno?
+- **Scope reale**: conta davvero (`wc -l`, `git ls-files | wc -l`). Il piano è sottodimensionato?
+- **Rimandi**: "questo lo dettagliamo just-in-time" è spesso una scusa per rimandare le
+  decisioni difficili. Elencale.
+
+Finding obbligatorio: *eseguito alla lettera, questo piano lascia il sistema non funzionante
+per quanto tempo?*
+
+## E. Cross-cutting / operazioni
+
+- **Deploy**: ordine fra componenti con contratto condiviso, migrazioni, downtime
+- **Backup / restore**: due DB non hanno un backup transazionalmente coerente — come si gestisce?
+- **Segreti**: come si genera, si condivide e si **ruota** un segreto fra due repo?
+- **Dipendenze condivise**: pacchetti linkati in più posti — versioning, drift, chi aggiorna
+- **Osservabilità**: log correlati? request id propagato? Se un job notturno fallisce,
+  qualcuno se ne accorge?
+- **Porte / risorse**: sono davvero libere e registrate?
+
+## F. Raggiungibilità a runtime — l'asse che tutti dimenticano
+
+Gli assi A–E guardano al **cambiamento**. Questo guarda a **ciò che c'è già**, e chiede una sola
+cosa: *il percorso dichiarato funzionante è davvero percorribile da un client reale, oggi?*
+
+- Ogni componente "pronto" è **montato** e **raggiungibile**? Middleware, gate, auth, proxy,
+  CORS, firewall: qualcuno risponde 403/404 prima ancora che il codice giusto venga eseguito?
+- Le funzioni "nuove" hanno **chiamanti di produzione**? (`grep` del nome: se compare solo nella
+  sua definizione e nei docstring, non è collegata a niente)
+- I test verdi provano il percorso reale, o girano con un **bypass** attivo (`APP_ENV=test`,
+  mock del middleware, fixture che salta l'auth)? Un gate disattivato nei test è un punto cieco
+  per definizione: 400 test verdi non dicono nulla su quel percorso.
+- Il codice deployato coincide con quello del repo? Il container ha ricostruito?
+
+Vale la pena dedicargli **un agente intero**. In un red team sullo split di questo progetto,
+cinque auditor puntati sul cambiamento hanno prodotto 89 finding senza accorgersi che il
+contratto al centro dell'epica rispondeva 403 a chiunque, perché il middleware non lo esentava
+e i test giravano col gate spento. L'ha trovato il sintetizzatore, per caso, verificando altro.
+
+## G. La domanda scomoda (sempre presente)
+
+Un agente deve argomentare **contro** la tesi del progetto, con dati:
+
+> "Questo approccio è necessario? Qual è l'alternativa più economica che ottiene lo stesso
+> obiettivo?"
+
+Deve portare numeri reali (righe di codice, endpoint, utenti, frequenza d'uso) e i criteri
+di decisione trovati nelle fonti, non opinioni. È il finding che nessun altro agente produrrà
+spontaneamente, perché tutti gli altri lavorano *dentro* la premessa.
+
+---
+
+# Assi di ricerca prior art
+
+Un agente per filone. Ogni prompt chiude con una **domanda avversariale** che cerca i fallimenti.
+
+| Filone | Cosa cercare |
 |---|---|
-| **Competing products** | OSS that solves the same problem: data model, mechanisms, UX. Who has a real engine and who relies on simple rules, and with what result |
-| **Algorithm / library** | Official docs + real examples from the upstream repo + community primer + authors' blog. Concrete patterns, not theory |
-| **Reference architecture** | Who made the same separation at a larger scale, and how they model the boundary |
-| **Integration patterns** | Idempotency key, outbox, CDC, reconciliation, bulk operations with per-record errors, contract testing |
-| **Strategic decision** | Literature *for and against* the architectural choice, with documented criteria and cases where the decision was reconsidered |
+| **Prodotti concorrenti** | OSS che risolve lo stesso problema: modello dati, meccanismi, UX. Chi ha un motore vero e chi si limita a regole semplici, con quale esito |
+| **Algoritmo / libreria** | Docs ufficiali + esempi reali del repo upstream + primer della community + blog degli autori. Pattern concreti, non teoria |
+| **Architettura di riferimento** | Chi ha fatto la stessa separazione su scala maggiore, e come modella il confine |
+| **Pattern di integrazione** | Idempotency key, outbox, CDC, riconciliazione, bulk con errori per-record, contract testing |
+| **Decisione strategica** | Letteratura *a favore e contro* la scelta architetturale, con criteri e casi di ripensamento documentati |
 
-## Queries that work
+## Query che funzionano
 
-- `<problem> site:github.com` then **open the issues**, not just the README
-- `<technology> post mortem` / `why we moved away from <X>` / `<X> regret`
-- `<project> wontfix` — closed issues say more than the roadmap
-- `site:reddit.com/r/<subreddit> <problem>` — real-world usage experience
-- `<pattern> antipattern` — critical literature almost always exists
-- Search in the user's language too: the local community may have different cases
+- `<problema> site:github.com` poi **apri le issue**, non solo il README
+- `<tecnologia> post mortem` / `why we moved away from <X>` / `<X> regret`
+- `<progetto> wontfix` — le issue chiuse dicono più della roadmap
+- `site:reddit.com/r/<sottoreddit> <problema>` — l'esperienza d'uso reale
+- `<pattern> antipattern` — la letteratura critica esiste quasi sempre
+- Cerca anche nella lingua dell'utente: la community locale ha casi diversi

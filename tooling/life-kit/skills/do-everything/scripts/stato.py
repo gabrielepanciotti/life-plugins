@@ -64,7 +64,7 @@ def main() -> None:
     repo = args.repo.resolve()
     state_file = repo / ".claude" / "do-everything" / "state.json"
     if not state_file.is_file():
-        print("no do-everything session in this project: run /do-everything to start one")
+        print("nessuna sessione do-everything in questo progetto: /do-everything per avviarne una")
         return
     state = json.loads(state_file.read_text(encoding="utf-8"))
     issues = state.get("issues", {})
@@ -98,15 +98,15 @@ def main() -> None:
     domande = [q for q in state.get("question_queue", []) if not q.get("answered")]
     print(f"Progresso do-everything — sessione {state.get('session_id', '?')} (avviata {state.get('created_at', '?')})")
     print(f"Completati: {stats['completed']}/{stats['total']}")
-    print(f"Running: {fmt(by('running'))}")
+    print(f"In esecuzione: {fmt(by('running'))}")
     print(f"In coda (domande): {fmt(by('questions'))}")
     print(f"Bloccati (dipendenze): {fmt(by('blocked'))}")
     print(f"Falliti: " + (", ".join(f"#{i['id']} ({i.get('error') or '?'})" for i in by('failed')) or "—"))
-    print(f"Waiting to start: {fmt(by('pending') + by('ready'))}")
+    print(f"In attesa di avvio: {fmt(by('pending') + by('ready'))}")
     print(f"Prossima domanda: " + (f"#{domande[0]['issue_id']} — {domande[0]['question']}" if domande else "—"))
     if interrotti:
-        verbo = "segnati failed" if args.aggiorna else "to mark as failed (rerun with --aggiorna)"
-        print(f"Interrupted agents (no commits or files for 45 min): {', '.join('#' + i for i in interrotti)} — {verbo}")
+        verbo = "segnati failed" if args.aggiorna else "da segnare failed (rilancia con --aggiorna)"
+        print(f"Agenti interrotti (niente commit né file da 45 min): {', '.join('#' + i for i in interrotti)} — {verbo}")
 
 
 if __name__ == "__main__":

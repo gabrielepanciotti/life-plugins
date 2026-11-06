@@ -452,7 +452,7 @@ def _fa_chapter_number(s: str) -> int | None:
 _TOC_HEADERS = (
     "table of contents", "contents", "índice", "sumário",   # EN / ES / PT
     "sumario",                                              # PT (no accent — OCR / accent-stripped, like indice below)
-    "table of contents",                                   # French
+    "table des matières",                                   # French
     "inhaltsverzeichnis",                                   # German
     "indice", "sommario",                                   # Italian (no accent — distinct from índice above)
     "inhoudsopgave",                                        # Dutch

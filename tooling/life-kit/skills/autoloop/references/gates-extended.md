@@ -2,29 +2,29 @@
 
 Index: 1 Multi-tier · 2 Playwright E2E · 3 Role-based · 4 Doc-always · 5 UX-simplicity
 
-These five gates integrate with and refine the basic `autoloop` loop. Each gate is operational and measurable.
+These 5 gates extend and refine the basic `autoloop` cycle. Each gate is actionable and measurable.
 
 ---
 
 ## 1. Multi-tier mode
 
-Tiers are derived from the backlog/SPEC in priority order: `P1 → tier1`, `P2 → tier2`, and so on.
-Dependencies between tasks determine the order within each tier.
+Tiers are derived from the backlog/SPEC in priority order: `P1 → tier1`, `P2 → tier2`, etc.
+Dependencies between tasks determine the internal order within each tier.
 
-**Hard rule**: tier N+1 starts ONLY if:
-- `STOP_CMD(tier N)` is entirely green (exit code 0 for every command), **AND**
-- the human checkpoint has passed (the user approved the previous tier).
+**Strict rule**: tier N+1 starts ONLY if:
+- `STOP_CMD(tier N)` is fully green (exit code 0 for all commands), **AND**
+- the human checkpoint has passed (the user has approved the previous tier).
 
 **Persistent state**: between iterations, each tier's state (green / red / in progress) is written
-to `PLAN.md` or a `loop-state.json` file in the project root. Never reread it from context.
+to `PLAN.md` or to a `loop-state.json` file in the project root. Never reread it from context.
 
-**Red dependencies**: If a tier N task depends on a task that is still red, tier N remains blocked.
-Never advance a tier while its dependencies are unresolved.
+**Red dependencies**: if a task in tier N depends on a task that is still red, tier N remains blocked.
+Never start a tier ahead of unresolved dependencies.
 
-**Structure example**:
+**Example structure**:
 ```
-tier1: [auth, db-schema]          ← green STOP_CMD + checkpoint → unlocks tier2
-tier2: [api-endpoints, hooks]     ← green STOP_CMD + checkpoint → unlocks tier3
+tier1: [auth, db-schema]          ← STOP_CMD green + checkpoint → unlocks tier2
+tier2: [api-endpoints, hooks]     ← STOP_CMD green + checkpoint → unlocks tier3
 tier3: [ui, docs, ux-review]
 ```
 
@@ -32,17 +32,17 @@ tier3: [ui, docs, ux-review]
 
 ## 2. Playwright E2E gate
 
-In addition to unit tests, each primary user workflow is covered by a real browser E2E test.
+In addition to unit tests, every primary user workflow is covered by an E2E test in a real browser.
 
 **What it does**:
 - Runs with `npx playwright test` (or `npm --prefix frontend run test:e2e`).
-- Includes at least one E2E flow for each user process defined in SPEC.
-- Is part of `STOP_CMD`: the loop does not stop if Playwright tests fail.
+- At least one E2E flow for each user process defined in the SPEC.
+- Included in `STOP_CMD`: the loop does not stop if Playwright tests fail.
 
 **Who writes the tests**:
-- The **test-writer subagent** (separate from the implementer, as specified in Phase 1).
+- The **test-writer subagent** (separate from the implementer, as in Phase 1).
 - E2E tests are derived from the SPEC's UAT criteria, **not** from the implemented code.
-- The implementer cannot modify E2E files after they are frozen.
+- The implementer may not modify E2E files once they are frozen.
 
 **Exit criterion**: `npx playwright test` exits with code 0 for all primary user flows.
 
@@ -50,57 +50,58 @@ In addition to unit tests, each primary user workflow is covered by a real brows
 
 ## 3. Role-based gate
 
-Test each role defined in SPEC separately for authentication, visibility, and permissions.
+Every role defined in the SPEC is tested separately: authentication, visibility, permissions.
 
 **For each role**:
-1. At least one E2E Playwright test for the role's typical path (happy path).
-2. At least one **negative** RBAC test: the role CANNOT see or do anything it is not authorized to
-(e.g. a standard user cannot access admin routes or read data from other tenants).
+1. At least one Playwright E2E test of the role's typical path (happy path).
+2. At least one **negative** RBAC test: the role CANNOT see / CANNOT do what is outside its scope
+   (e.g. a standard user cannot access admin routes or read another tenant's data).
 
-**Measurable**: A negative RBAC test must assert an HTTP 403/401 or that the UI element is absent
-— not merely that the app does not crash.
+**Measurable**: the negative RBAC test must assert an HTTP 403/401 or that the UI element is absent
+—not merely that "it doesn't crash".
 
-**Recommended file structure**:
+**Suggested file structure**:
 ```
 tests/e2e/role_admin.spec.ts
 tests/e2e/role_user.spec.ts
-tests/e2e/rbac_negative.spec.ts   # contains all "must not see/do" cases
+tests/e2e/rbac_negative.spec.ts   # contains all the "must not see/do" cases
 ```
 
-**Exit criterion**: All role tests (positive and negative) pass with `npx playwright test`.
+**Exit criterion**: all role tests (positive + negative) pass with `npx playwright test`.
 
 ---
 
 ## 4. Doc-always gate
 
-At the end of **each tier**, update the project documentation before declaring the tier "done".
+At the end of **every tier**, project documentation is updated before declaring the tier "done".
 
 **What to update** (in order):
 1. Docstrings and type hints in the modified code.
 2. `.claude/docs/` files relevant to the tier: `architecture.md`, `api.md`, `database.md`, `deployment.md`.
-3. The tier's **commit message**, in long form: what changed, why, and what it costs if it is wrong. Do not add `changelog.md`: the history belongs with the diff and the issues, not in a fourth file that will drift.
+3. The tier's **commit message**, in long form: what changes, why, and what it costs if it is wrong. No `changelog.md`: history travels with the diff and issues,
+   not in a fourth file that will drift.
 
-**How**: invoke the `docs` agent (or an equivalent skill configured in the project) or run
-the project's documentation command. If there is no dedicated skill, add the documentation task
-explicitly to the final step of each tier in `PLAN.md`.
+**How**: invoke the `docs` agent (or the equivalent skill configured in the project) or run
+the project's documentation command. If there is no dedicated skill, documentation must be an explicit
+action in `PLAN.md` at the last step of every tier.
 
-**Hard rule**: A tier is NOT "done" until the relevant docs reflect the status
-produced by that tier. The human checkpoint happens AFTER the documentation update, not before.
+**Strict rule**: a tier is NOT "done" until the relevant docs reflect the state
+produced by that tier. The human checkpoint happens AFTER the docs, not before.
 
 ---
 
 ## 5. UX-simplicity gate
 
-Each primary user process must be reachable in ≤ 3 clicks from the main dashboard.
+Every primary user process must be reachable in ≤ 3 clicks from the main dashboard.
 
-**Measurable heuristics** (verified in code review / E2E):
-- **Click depth**: Count clicks from the entry point (dashboard / home) to process completion.
-If > 3, simplify the flow or restructure the navigation.
-- **Onboarding**: A new user finds an initial tutorial or wizard on first login.
-Verify with an E2E `role_new_user.spec.ts` test that completes onboarding from scratch.
-- **No native browser controls**: Checkboxes, radio buttons, selects, and toggles must
-always use custom Tailwind components — elegant, animated, with hover/focus/active states. This is a
-design-system UI rule (`@suite/design-system`). Verify in review by searching for `<input type="checkbox"`, `<select`, and `<input type="radio"`.
+**Measurable heuristic** (verified in code review / E2E):
+- **Click depth**: count the clicks from the entry point (dashboard / home) to process completion.
+  If > 3, simplify the flow or restructure the navigation.
+- **Onboarding**: a new user finds a tutorial or initial wizard on first access.
+  Verified with an E2E `role_new_user.spec.ts` that completes onboarding from scratch.
+- **No native browser controls**: checkboxes, radio buttons, selects, and toggles must always be
+  custom Tailwind components — polished, animated, with hover/focus/active states. Design system UI rule (`@suite/design-system`).
+  Verified in review with grep for `<input type="checkbox"`, `<select`, `<input type="radio"`.
 
 **Exit criterion**:
 ```bash
@@ -109,9 +110,5 @@ grep -rn '<input type="checkbox"\|<input type="radio"\|<select\|<input type="ran
 # Click depth: verified manually or by a reviewer during gsd-ui-review
 ```
 
-The gate is **red** if even one of the three criteria fails. Verify it in the tier's opposing review
+The gate is **red** if even one of the three criteria fails. Verified in the adversarial review
 at the end of the tier (PHASE 3 + `gsd-ui-review`).
-
-## Instance specifics
-
-Run `python -m suite_core.nodes skill-overlay autoloop` and apply what it prints (it may print nothing).

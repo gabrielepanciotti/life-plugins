@@ -1,6 +1,6 @@
 ---
 name: evals-from-spec
-description: "Generate truth-kit and train/val evals from a SPEC with acceptance criteria. Use with '/evals-from-spec', 'generate evals from spec', 'create genuine tests from this spec', 'extract acceptance criteria and do evals'. Not to self-improve a skill nor to write test code."
+description: "Generate truth-kit and train/val evals from a SPEC with acceptance criteria. Use with '/evals-from-spec', 'generate evals from spec', 'create genuine tests from this spec', 'extract acceptance criteria and do evals'. Not to self-improve a skill or write test code."
 ---
 
 # evals-from-spec — from SPEC to genuine evals
@@ -13,7 +13,7 @@ Index: When to use it · Needed · Process (6 steps) · Human gate · Output · 
 |---|---|
 | You have a SPEC with acceptance criteria and you want the truth-kit + eval file | **Yes** |
 | Do you want to self-improve an existing skill | No → use `update-skill` if it is installed, otherwise `autoloop` with the truth-kit produced here |
-| Do you want to write tests in pytest/unittest for Python logic | No → that's TDD, use the `testing` | skill
+| Do you want to write tests in pytest/unittest for Python logic | No → that's TDD, use the skill `testing` |
 | You don't have a SPEC, just a vague idea | No → write the SPEC first, then come back here |
 
 ## Needed
@@ -48,8 +48,8 @@ Add `"split": "validation"` at top-level.
 The test_case number must be identical to train (required by the `--pair` validator).
 
 4. **Autogate.**
-```bash
-   V=<skill>/scripts/validate_evals.py   # on Windows: use py -3.13 instead of python3.13
+   ```bash
+   V=<skill>/scripts/validate_evals.py   # on Windows, use py -3.13 instead of python3.13
    python3.13 "$V" evals/evals.json --pair evals/val.json
    python3.13 "$V" evals/val.json
    ```
@@ -85,7 +85,7 @@ At the end of the process, deliver:
 1. **`evals/evals.json`** — train file validated (validator exit 0)
 2. **`evals/val.json`** — validation file validated, same test_case number
 3. **Truth-Kit** — textual list of covered behaviors, in this format (use identical):
-```
+   ```
    PASS → [id]: [description of the expected behavior]
    FAIL → [id]: [behavior that must not occur]
    ```
@@ -94,9 +94,12 @@ This kit is delivered to the autoloop as ground truth to verify iterative improv
 ## Notes
 
 - This skill is generic (not tied to a single project).
-- `scripts/validate_evals.py` script uses standard library only: no venv needed. Its errors name the problem and what's in its place (valid types, excess types, duplicate ids, items that aren't objects).
+- The `scripts/validate_evals.py` script uses only the standard library: no venv needed. Its errors name the problem and what's in its place (valid types, excess types, duplicate ids, items that aren't objects).
 - The validator also checks the train/val pairing: the number of test_cases must be the same. If you add a case to the train, add one corresponding to the val.
 - The minimum thresholds (≥ 8 test_cases, ≥ 40 total assertions, ≥ 60% S/A/B, ≤ 20% D/F) are fixed in the script: if the files do not reach them, adjust the eval files, not the validator (otherwise the gate no longer guarantees anything).
 - References: `references/tiering-and-schema.md` (scheme + thresholds), `references/acceptance-extraction.md` (extraction technique + example of F2 Orders).
 
 Finish only when both files print `VALID`, the human gate has been OKed, and the truth-kit has been delivered.
+## Instance specifics
+
+Run `python <this skill's base directory>/../../scripts/skill-overlay.py evals-from-spec` and apply the tree-specific appendix it prints. The appendix may be empty.

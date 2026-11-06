@@ -1,95 +1,89 @@
 ---
 name: idea
-description: "Capture a fact, decision, idea, or constraint in the Life tree's brain: write it immediately without asking when it has happened (a decision was made, a task was completed or defined, or a supplier said something in an email or call); queue it for the digest if it is still a fresh idea. Use when the user writes '/idea', 'note this down', 'this belongs in the brain', 'remember that', 'record this decision', or whenever a project fact obviously belongs in the brain."
+description: "Record a fact, decision, idea, or constraint in the Life tree brain. Record confirmed events immediately; queue ideas that are still tentative. Use when the user invokes `/idea`, asks to remember something, or a project fact clearly belongs in the brain."
 ---
 
-# Capture a fact in the brain
+# Record a fact in the brain
 
-Index: Setup · Direct or queue? · Write directly · Queue · What not to do
+Index: Setup · Direct or queued? · Direct writing · Queue · What not to do
 
-## Setup — where the brain lives
+## Setup — where the brain is
 
-The brain belongs to the **Life tree** (`life-<id>`), not to the node where the
-session is open. From Life's `packages/shared` directory, using its venv (`.venv`, Python 3.13):
+The brain belongs to the **Life tree** (`life-<id>`), not the node where the session is running. From Life's `packages/shared` folder, with its venv (`.venv`, Python 3.13):
 
 ```bash
-python -m suite_core.nodes brain-root --node <node-folder>   # <instance>/brain
-python -m suite_core.nodes framework-root                    # the Life folder
+python -m suite_core.nodes brain-root --node <node-directory> # <instance>/brain
+python -m suite_core.nodes framework-root                       # Life framework directory
 ```
 
-When `LIFE_INSTANCE_DIR=<instance>` is set, `brain-root` works without `--node`.
-If `--node` says “no instance for this node”, no tree can be determined with
-certainty: write the fact in the node's `brain/` anyway, and say so. In the rest of
-this skill, `$BRAIN` means that path and `$FW` means the Life folder.
+With `LIFE_INSTANCE_DIR=<instance>` set, `brain-root` (without `--node`) responds on its own.
+If `--node` says «no instance for this node», no tree can be determined with
+certainty, record the fact in the node `brain/` and tell the user. In this skill, `$BRAIN` means that path and `$FW` means the Life framework directory.
 
-## Direct or queue?
+## Direct or queued?
 
-- **Direct** when the fact *has happened*: decided, done, or said by someone (a decision
-  made, a task completed or defined, a supplier email or call, a deadline, who does what).
-  Write it immediately, **without asking**: the question “Should I write this?” goes
-  unanswered and the fact never makes it in. The brain is internal and easy to correct;
-  confirmation is needed only for things sent to other people.
-- **Queue** when it is a fresh idea that may change during the session: the safety net,
-  processed by the digest and reviewed with `idee-revisione`.
+- **Direct** when an event *has happened*: a decision, completed or defined task, someone
+said something, a supplier email or call, a deadline, or an assignment. Record it immediately,
+**without asking**. The brain is internal and can be corrected; confirmation is needed only for
+content sent to other people.
+- **Queue** when an idea is tentative and may change during the session. The digest processes
+queued ideas, which are reviewed with `idee-revisione`.
 
-## Write directly
+## Direct writing
 
-1. Choose the fact (or facts) from the same moment: one fact, one note.
-2. Write to the tree's brain (`$BRAIN`):
-   - a dated project fact → a new note
-     `nodes/<node>/facts/<YYYY-MM-DD>-<slug>.md` (`<node>` = ID in the Life graph, that is the
-     `slug` in `node.config`), with front matter:
-     `title`, `summary`, `tags: [facts, type/fact, <node>]`, `status: active`,
-     `created`, `updated`, plus two fields that must not be confused:
-     `source:` = where the information came from (`supplier email 2026-09-17`,
-     `call with the client`, `session on node X`), and `project:` = which
-     project it concerns, using its key (separate multiple keys with commas). The
-     `<node>` folder follows `project:`, never the source.
-     Body: what, why, what changes, who.
-   - a fact that corrects the project page (`projects/<x>.md`) → update it and
-     advance `updated`; if it contradicts the page, it is a **revocation**: follow
-     `idee-revisione`.
-3. Commit and push the tree repo (`git -C <instance>`), then report in one line:
-   `🧠 Written: <path>`. Do not also add it to the queue.
+1. Choose the fact (or facts) of the same moment: a fact, a note.
+2. Write in the brain of the tree (`$BRAIN`):
+- a dated fact about a project → new note
+`nodes/<node>/facts/<YYYY-MM-DD>-<slug>.md` (`<node>` is the node ID in the Life graph,
+that is, the `slug` in `node.config`), with frontmatter:
+`title`, `summary`, `tags: [facts, type/fact, <node>]`, `status: active`,
+`created`, `updated`, and two distinct fields:
+`fonte:` = where the information came from (`supplier email 2026-09-17`,
+`customer call`, `session on node X`); `progetto:` = the project being discussed,
+identified by its key (separate multiple keys with commas). The `<node>` folder follows
+`progetto:`, never the source.
+Body: what happened, why, what changes, and who is responsible.
+- A fact that corrects a project file (`projects/<x>.md`) → update it and refresh
+`updated`. If it contradicts existing information, treat it as a **revocation** and follow `idee-revisione`.
+3. Commit and push the tree repository (`git -C <instance>`), then report:
+`🧠 Recorded: <path>`. Do not also add the same fact to the queue.
 
-The dated name distinguishes a new fact from a reference note. For the rest of the
-format (hub, wikilinks, length), follow the `brain-note` skill from the `suite-tooling` plugin.
+The date distinguishes a new fact from a reference note. For the rest of the format
+(hub, wikilinks, and length), follow the `brain-note` skill in the `suite-tooling` plugin.
 
 ## Queue
 
-Append an entry to the queue of the Life tree linked to this node
+Appends an entry to the tail of the Life tree connected to this node
 (`<instance>/.brain-inbox/ideas.jsonl`), or to the node's local queue if no tree is
-linked (contract: `docs/brain-coda-istanza.md` in Life). Life's digest
-(`scripts/brain/digest.py --instance <instance>`) processes it by proposing notes
-in `<instance>/brain/sources/_proposte-<date>.md`, which the user approves with `idee-revisione`.
+connected (contract: `docs/brain-coda-istanza.md` in Life). Life's digest
+(`scripts/brain/digest.py --instance <instance>`) disposes of it by proposing the notes
+in `<instance>/brain/sources/_proposte-<data>.md`, and the user approves them with `idee-revisione`.
 
-1. Take the text. With `/idea <text>`, use that. With `/idea` alone, use the last thing
-   said that is worth keeping and say so in one line: “I'll note this: ‘…’”. Then apply
-   “Direct or queue?”: if it is a decision already made or a fact that happened (“we don't
-   use Redis”), it belongs under Write directly, not here.
-2. If context needed to understand it six months from now is missing (which project it
-   concerns, which alternative was chosen over), add that context to the end of the text,
-   in square brackets: the digest works from this text, not the conversation.
-3. Append the entry using this skill's script, `scripts/accoda.sh` (in this skill's
-   directory; that is the directory from which you read this file):
-   `bash <skill-folder>/scripts/accoda.sh "<text>"`. It prints `in coda per <path>`: the
-   path shows which queue received it (Life tree or node). It finds the tree and Life
-   automatically; if it cannot, set `LIFE_INSTANCE_DIR` and/or `LIFE_FRAMEWORK_DIR`.
-4. Confirm in one line: `📌 Queued for the brain of <instance>: “<first 60 characters>…”`
-   (if the command says no tree is linked: `📌 Queued in the node: “…”`).
+1. Get the text. With `/idea <text>` it is that. With only `/idea` use the last thing
+dictated as worth keeping and repeat it in one line: “I captured this: …”. Then apply
+«Direct or queue?»: if it is a decision made or an event that happened ("we don't use Redis")
+it goes to Direct Writing, not here.
+2. If the context that makes it understandable is missing in six months (which project is it talking about,
+against which alternative was chosen), add it at the end of the text, in brackets
+squares: the digest works on this text, not on the conversation.
+3. Append the entry with the skill script, `scripts/accoda.sh` (in this folder
+skills; its folder is the one from which you read this file):
+`bash <skill-directory>/scripts/accoda.sh "<text>"`. Print `queued for <path>`: the
+path tells which queue (tree Life or node) received it. Find tree and Life yourself;
+if it fails, set `LIFE_INSTANCE_DIR` and/or `LIFE_FRAMEWORK_DIR`.
+4. Confirm in one line: `📌 Queued for the <instance> brain: “<first 60 characters>…”`
+(if no tree is connected, use: `📌 Queued in the node: “…”`).
 
-The queue does not clear itself: the digest must be run (manually or as a scheduled
-activity for the user) with `python scripts/brain/digest.py --instance <instance>` from
-`$FW`, using Life's venv. Without it, ideas remain queued and never reach review.
+The queue does not empty itself: the digest must be launched (by hand or from a scheduled task
+of the user) with `python scripts/brain/digest.py --instance <instance>` from `$FW`, with the
+venv of Life. Without it, ideas sit in the queue and never make it to review.
 
 ## What not to do
 
-- Do not ask for confirmation before writing to the brain or adding to the queue: that
-  takes longer than capturing the fact, and a wrong note can be corrected (revoked with
-  `idee-revisione`).
-- Do not write the same thing twice in one turn, either directly or in the queue.
-- Do not write directly for an idea that is still tentative: queue it.
-
+- Do not ask for confirmation before writing in the brain or before queuing: it costs more than
+capture itself, and a wrong note is corrected (revoked with `idee-revisione`).
+- Do not write the same thing twice in the same shift, neither live nor in the queue.
+- Don't write direct writing for a still tentative idea: it goes to the back of the queue.
 ## Instance specifics
 
-Run `python <this skill's base directory>/../../scripts/skill-overlay.py idea` and apply what it prints (it may print nothing).
+Run `python <this skill's base directory>/../../scripts/skill-overlay.py idea` and apply the tree-specific appendix it prints. The appendix may be empty.
